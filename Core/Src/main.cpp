@@ -25,7 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
 #include "lcd.h"
-//#include "Motor.h"
+#include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 /* USER CODE END Includes */
 
@@ -53,87 +53,15 @@ int speed = 0;
 int target = 463;
 
 int a = 1;
-// Encoders
-volatile int encoder1_ticks = 0;
-volatile int encoder2_ticks = 0;
-volatile int encoder3_ticks = 0;
-volatile int encoder4_ticks = 0;
 
-struct MotorControl {
-    int32_t ticks = 0;
-    int32_t last_ticks = 0;
-    float delta_ticks = 0;
-    float distance_cm = 0;
+// Motor
+Motor frontLeftMotor;
+Motor frontRightMotor;
+Motor backLeftMotor;
+Motor backRightMotor;
 
-    float target_speed_cm_s = 0;
-    float actual_speed_cm_s = 0;
-
-    float kp = 1.0f;
-    float ki = 1.0f;
-    float kd = 0.1f;
-    float integral = 0;
-    float last_error = 0;
-    float pwm_out = 0;
-
-    uint32_t last_time_ms = 0;
-};
-
-MotorControl frontLeftMotor;
-MotorControl frontRightMotor;
-MotorControl backLeftMotor;
-MotorControl backRightMotor;
 // Motors
-void set_pwm_forward(Pin inA, Pin inB, Pin enable, TIM_HandleTypeDef* htim, uint32_t channel, uint16_t pwm_value)
-{
-    // Dirección hacia adelante: A = HIGH, B = LOW
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_RESET);
 
-    // PWM limitado al ARR máximo
-    uint16_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
-    uint16_t duty = (pwm_value > arr) ? arr : pwm_value;
-
-    // Enviar PWM
-    HAL_TIM_PWM_Start(htim, channel);
-    __HAL_TIM_SET_COMPARE(htim, channel, duty);
-}
-
-void update_motor(MotorControl& motor, uint32_t now_ms, Pin inA, Pin inB, Pin en, TIM_HandleTypeDef* htim, uint32_t channel) {
-    float dt = (now_ms - motor.last_time_ms) / 1000.0f;
-    if (dt <= 0.0f) return;
-
-    motor.delta_ticks = motor.ticks - motor.last_ticks;
-    motor.distance_cm += motor.delta_ticks * Constants::kCMPerTick;
-    motor.actual_speed_cm_s = (motor.delta_ticks * Constants::kCMPerTick) / dt;
-
-    float error = motor.target_speed_cm_s - motor.actual_speed_cm_s;
-    motor.integral += error * dt;
-    float derivative = (error - motor.last_error) / dt;
-
-    float output = motor.kp * error + motor.ki * motor.integral + motor.kd * derivative;
-    motor.pwm_out = std::min(std::max(output, 0.0f), 50.0f); // PWM (0–50)
-
-    // Dirección hacia adelante
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_RESET);
-
-    __HAL_TIM_SET_COMPARE(htim, channel, (uint16_t)motor.pwm_out);
-    HAL_TIM_PWM_Start(htim, channel);
-
-    motor.last_error = error;
-    motor.last_ticks = motor.ticks;
-    motor.last_time_ms = now_ms;
-}
-
-void stop_motor(Pin inA, Pin inB, TIM_HandleTypeDef* htim, uint32_t channel)
-{
-    // Active brake: both inputs HIGH
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_SET);
-
-    // Stop PWM signal
-    __HAL_TIM_SET_COMPARE(htim, channel, 0);
-}
 void stop_all_motors() {
     // Front Left
     stop_motor(Constants::kFrontLeftA, Constants::kFrontLeftB, &htim1, TIM_CHANNEL_1);
@@ -158,14 +86,15 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch (GPIO_Pin) {
-		case GPIO_PIN_0: frontLeftMotor.ticks++; break;
-		case GPIO_PIN_1: frontRightMotor.ticks++; break;
-		case GPIO_PIN_2: backLeftMotor.ticks++; break;
-		case GPIO_PIN_3: backRightMotor.ticks++; break;
+		case Constants::kFrontLeftEncoder.pin: frontLeftMotor.ticks++; break;
+		case Constants::kFrontRightEncoder.pin: frontRightMotor.ticks++; break;
+		case Constants::kBackLeftEncoder.pin: backLeftMotor.ticks++; break;
+		case Constants::kBackRightEncoder.pin: backRightMotor.ticks++; break;
 	}
 }
 /* USER CODE END PFP */
@@ -209,33 +138,61 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   MX_GPIO_Init();
-    MX_I2C1_Init();
-    MX_USB_DEVICE_Init();
-    /* USER CODE BEGIN 2 */
-    EXTI->RTSR |= (1 << 0);  // PA0
-    EXTI->RTSR |= (1 << 1);  // PA1
-    EXTI->RTSR |= (1 << 2);  // PA2
-    EXTI->RTSR |= (1 << 3);  // PA3
+  MX_I2C1_Init();
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 2 */
+  EXTI->RTSR |= (1 << 0);  // PA0
+  EXTI->RTSR |= (1 << 1);  // PA1
+  EXTI->RTSR |= (1 << 2);  // PA2
+  EXTI->RTSR |= (1 << 3);  // PA3
 
-    EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
-    EXTI->FTSR &= ~(1 << 1);
-    EXTI->FTSR &= ~(1 << 2);
-    EXTI->FTSR &= ~(1 << 3);
+  EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
+  EXTI->FTSR &= ~(1 << 1);
+  EXTI->FTSR &= ~(1 << 2);
+  EXTI->FTSR &= ~(1 << 3);
 
-    HAL_Init();
-    SystemClock_Config();
-    MX_GPIO_Init();
-    MX_TIM1_Init();
-    MX_TIM3_Init();
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_TIM1_Init();
+  MX_TIM3_Init();
 
-    lcd_begin();
-    send_msg("Equipo4");
+  lcd_begin();
+  send_msg("Equipo4");
 
-    // Rueda Derecha
-    frontLeftMotor.target_speed_cm_s = 30;
-	frontRightMotor.target_speed_cm_s = speed;
-	backLeftMotor.target_speed_cm_s = speed;
-	backRightMotor.target_speed_cm_s = speed;
+  // Motores (Checar que los canales sean los correctos)
+  frontLeftMotor.init(
+    Constants::kFrontLeftA,
+    Constants::kFrontLeftB,
+    Constants::kFrontLeftEncoder,
+    TIM_CHANNEL_1,
+    &htim1);
+  frontRightMotor.init(
+  Constants::kFrontRightA,
+  Constants::kFrontRightB,
+  Constants::kFrontRightEncoder,
+  TIM_CHANNEL_1,
+  &htim3);
+  
+  backRightMotor.init(
+    Constants::kBackRightA,
+    Constants::kBackRightB,
+    Constants::kBackRightEncoder,
+    TIM_CHANNEL_2,
+    &htim3); 
+  
+  backLeftMotor.init(
+    Constants::kBackLeftA,
+    Constants::kBackLeftB,
+    Constants::kBackLeftEncoder,
+    TIM_CHANNEL_3,
+    &htim3);
+  
+  /// SPEED
+  frontLeftMotor.setTarget(speed);
+	frontRightMotor.setTarget(speed);
+	backLeftMotor.setTarget(speed);
+	backRightMotor.setTarget(speed);
 	uint32_t last_average_time = 0;
 	float total_distance = 0;
 
@@ -247,10 +204,10 @@ int main(void)
   {
     /* USER CODE END WHILE */
 	  uint32_t now = HAL_GetTick();
-	  update_motor(frontLeftMotor,  now, Constants::kFrontLeftA,  Constants::kFrontLeftB,  Constants::kFrontLeftEnable,  &htim1, TIM_CHANNEL_1);
-	  update_motor(frontRightMotor, now, Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEnable, &htim3, TIM_CHANNEL_1);
-	  update_motor(backLeftMotor,   now, Constants::kBackLeftA,   Constants::kBackLeftB,   Constants::kBackLeftEnable,   &htim3, TIM_CHANNEL_2);
-	  update_motor(backRightMotor,  now, Constants::kBackRightA,  Constants::kBackRightB,  Constants::kBackRightEnable,  &htim3, TIM_CHANNEL_4);
+	  frontLeftMotor.update_motor(now);
+	  frontRightMotor.update_motor(now);
+    backLeftMotor.update_motor(now);
+    backRightMotor.update_motor(now);
 
 		 float average_distance =
 				    (frontLeftMotor.distance_cm +

@@ -89,6 +89,9 @@ class Constants{
 		inline static constexpr float kMotorKD = 8.0;
 		inline static constexpr float kMotorMaxOut = 10.0;
 		inline static constexpr float kMotorMinOut = 0.0;
+
+		// PWM Quality // 
+		inline static constexpr float kMaxPWM = 50.0f,
 };
 
 
