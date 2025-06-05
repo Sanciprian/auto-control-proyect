@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under Ultimate Liberty license
+ * SLA0044, the "License"; You may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at:
+ *                             www.st.com/SLA0044
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -25,8 +25,9 @@
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
 #include "lcd.h"
-//#include "Motor.h"
+#include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
+#include "Movement.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,108 +46,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
-
-TIM_HandleTypeDef htim1;
-TIM_HandleTypeDef htim3;
-
-int speed = 0;
+// 22,.9 PARA MINIMA
+int speed = 40;
 int target = 463;
 
 int a = 1;
-// Encoders
-volatile int encoder1_ticks = 0;
-volatile int encoder2_ticks = 0;
-volatile int encoder3_ticks = 0;
-volatile int encoder4_ticks = 0;
-
-struct MotorControl {
-    int32_t ticks = 0;
-    int32_t last_ticks = 0;
-    float delta_ticks = 0;
-    float distance_cm = 0;
-
-    float target_speed_cm_s = 0;
-    float actual_speed_cm_s = 0;
-
-    float kp = 1.0f;
-    float ki = 1.0f;
-    float kd = 0.1f;
-    float integral = 0;
-    float last_error = 0;
-    float pwm_out = 0;
-
-    uint32_t last_time_ms = 0;
-};
-
-MotorControl frontLeftMotor;
-MotorControl frontRightMotor;
-MotorControl backLeftMotor;
-MotorControl backRightMotor;
-// Motors
-void set_pwm_forward(Pin inA, Pin inB, Pin enable, TIM_HandleTypeDef* htim, uint32_t channel, uint16_t pwm_value)
-{
-    // Dirección hacia adelante: A = HIGH, B = LOW
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_RESET);
-
-    // PWM limitado al ARR máximo
-    uint16_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
-    uint16_t duty = (pwm_value > arr) ? arr : pwm_value;
-
-    // Enviar PWM
-    HAL_TIM_PWM_Start(htim, channel);
-    __HAL_TIM_SET_COMPARE(htim, channel, duty);
-}
-
-void update_motor(MotorControl& motor, uint32_t now_ms, Pin inA, Pin inB, Pin en, TIM_HandleTypeDef* htim, uint32_t channel) {
-    float dt = (now_ms - motor.last_time_ms) / 1000.0f;
-    if (dt <= 0.0f) return;
-
-    motor.delta_ticks = motor.ticks - motor.last_ticks;
-    motor.distance_cm += motor.delta_ticks * Constants::kCMPerTick;
-    motor.actual_speed_cm_s = (motor.delta_ticks * Constants::kCMPerTick) / dt;
-
-    float error = motor.target_speed_cm_s - motor.actual_speed_cm_s;
-    motor.integral += error * dt;
-    float derivative = (error - motor.last_error) / dt;
-
-    float output = motor.kp * error + motor.ki * motor.integral + motor.kd * derivative;
-    motor.pwm_out = std::min(std::max(output, 0.0f), 50.0f); // PWM (0–50)
-
-    // Dirección hacia adelante
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_RESET);
-
-    __HAL_TIM_SET_COMPARE(htim, channel, (uint16_t)motor.pwm_out);
-    HAL_TIM_PWM_Start(htim, channel);
-
-    motor.last_error = error;
-    motor.last_ticks = motor.ticks;
-    motor.last_time_ms = now_ms;
-}
-
-void stop_motor(Pin inA, Pin inB, TIM_HandleTypeDef* htim, uint32_t channel)
-{
-    // Active brake: both inputs HIGH
-    HAL_GPIO_WritePin(inA.port, inA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(inB.port, inB.pin, GPIO_PIN_SET);
-
-    // Stop PWM signal
-    __HAL_TIM_SET_COMPARE(htim, channel, 0);
-}
-void stop_all_motors() {
-    // Front Left
-    stop_motor(Constants::kFrontLeftA, Constants::kFrontLeftB, &htim1, TIM_CHANNEL_1);
-
-    // Front Right
-    stop_motor(Constants::kFrontRightA, Constants::kFrontRightB, &htim3, TIM_CHANNEL_1);
-
-    // Back Left
-    stop_motor(Constants::kBackLeftA, Constants::kBackLeftB, &htim3, TIM_CHANNEL_2);
-
-    // Back Right
-    stop_motor(Constants::kBackRightA, Constants::kBackRightB, &htim3, TIM_CHANNEL_4);
-}
 
 /* USER CODE BEGIN PV */
 
@@ -158,15 +62,25 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	switch (GPIO_Pin) {
-		case GPIO_PIN_0: frontLeftMotor.ticks++; break;
-		case GPIO_PIN_1: frontRightMotor.ticks++; break;
-		case GPIO_PIN_2: backLeftMotor.ticks++; break;
-		case GPIO_PIN_3: backRightMotor.ticks++; break;
-	}
+  switch (GPIO_Pin)
+  {
+  case Constants::kFrontLeftEncoder:
+    frontLeftMotor.addTicks();
+    break;
+  case Constants::kFrontRightEncoder:
+    frontRightMotor.addTicks();
+    break;
+  case Constants::kBackLeftEncoder:
+    backLeftMotor.addTicks();
+    break;
+  case Constants::kBackRightEncoder:
+    backRightMotor.addTicks();
+    break;
+  }
 }
 /* USER CODE END PFP */
 
@@ -176,9 +90,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -209,35 +123,34 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   MX_GPIO_Init();
-    MX_I2C1_Init();
-    MX_USB_DEVICE_Init();
-    /* USER CODE BEGIN 2 */
-    EXTI->RTSR |= (1 << 0);  // PA0
-    EXTI->RTSR |= (1 << 1);  // PA1
-    EXTI->RTSR |= (1 << 2);  // PA2
-    EXTI->RTSR |= (1 << 3);  // PA3
+  MX_I2C1_Init();
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 2 */
+  // EXTI->RTSR |= (1 << 0); // PA0
+  // EXTI->RTSR |= (1 << 1); // PA1
+  // EXTI->RTSR |= (1 << 2); // PA2
+  // EXTI->RTSR |= (1 << 3); // PA3
 
-    EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
-    EXTI->FTSR &= ~(1 << 1);
-    EXTI->FTSR &= ~(1 << 2);
-    EXTI->FTSR &= ~(1 << 3);
+  // EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
+  // EXTI->FTSR &= ~(1 << 1);
+  // EXTI->FTSR &= ~(1 << 2);
+  // EXTI->FTSR &= ~(1 << 3);
 
-    HAL_Init();
-    SystemClock_Config();
-    MX_GPIO_Init();
-    MX_TIM1_Init();
-    MX_TIM3_Init();
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+  MX_TIM1_Init();
+  MX_TIM3_Init();
 
-    lcd_begin();
-    send_msg("Equipo4");
+  lcd_begin();
+  send_msg("Equipo4");
 
-    // Rueda Derecha
-    frontLeftMotor.target_speed_cm_s = 30;
-	frontRightMotor.target_speed_cm_s = speed;
-	backLeftMotor.target_speed_cm_s = speed;
-	backRightMotor.target_speed_cm_s = speed;
-	uint32_t last_average_time = 0;
-	float total_distance = 0;
+  movementInit();
+
+  /// SPEED
+  setSpeed(speed);
+  uint32_t last_average_time = 0;
+  float total_distance = 0;
 
   /* USER CODE END 2 */
 
@@ -246,48 +159,56 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  uint32_t now = HAL_GetTick();
-	  update_motor(frontLeftMotor,  now, Constants::kFrontLeftA,  Constants::kFrontLeftB,  Constants::kFrontLeftEnable,  &htim1, TIM_CHANNEL_1);
-	  update_motor(frontRightMotor, now, Constants::kFrontRightA, Constants::kFrontRightB, Constants::kFrontRightEnable, &htim3, TIM_CHANNEL_1);
-	  update_motor(backLeftMotor,   now, Constants::kBackLeftA,   Constants::kBackLeftB,   Constants::kBackLeftEnable,   &htim3, TIM_CHANNEL_2);
-	  update_motor(backRightMotor,  now, Constants::kBackRightA,  Constants::kBackRightB,  Constants::kBackRightEnable,  &htim3, TIM_CHANNEL_4);
+    uint32_t now = HAL_GetTick();
+    updateMovement(now);
 
-		 float average_distance =
-				    (frontLeftMotor.distance_cm +
-				     frontRightMotor.distance_cm +
-				     backRightMotor.distance_cm) / 3.0f;
-		 char buffer[32];
-		 int distancia_entera = (int)average_distance;
+    // float average_distance =
+    //     (frontLeftMotor.distance_cm +
+    //      frontRightMotor.distance_cm +
+    //      backRightMotor.distance_cm) /
+    //     3.0f;
+    // char buffer[32];
+    // int distancia_entera = (int)average_distance;
 
-	 while (distancia_entera > target){
-		 if (a){
-		 sprintf(buffer,"Dist: %d cm", (int)backLeftMotor.ticks);
-		 		 lcd_clean();
-		 		 send_msg(buffer);
-		 		 a = a -1;
-		 }
-						 stop_all_motors();
-					 }
-	  // Cada 1000 ms: calcular distancia promedio
-	 if (now - last_average_time >= 500)
-	 {
-		 sprintf(buffer,"Dist: %d cm", (int)backRightMotor.ticks);
-		 lcd_clean();
-		 send_msg(buffer);
+    // while (distancia_entera > target)
+    // {
+    //   if (a)
+    //   {
+    // sprintf(buffer, "Dist: %d cm", (int)backLeftMotor.ticks);
+    // lcd_clean();
+    // send_msg(buffer);
+    //     a = a - 1;
+    //   }
+    //   stop_all_motors();
+    // }
+    // // Cada 1000 ms: calcular distancia promedio
+    // if (now - last_average_time >= 500)
+    // {
+    //   sprintf(buffer, "Dist: %d cm", (int)backRightMotor.ticks);
+    //   lcd_clean();
+    //   send_msg(buffer);
 
-		 last_average_time = now;
+    //   last_average_time = now;
+    // }
+    char buffer[32];
+    sprintf(buffer, "Dist: %d cm", (int)frontLeftMotor.getPWM());
+    lcd_clean();
+    send_msg(buffer);
+    HAL_Delay(100);
+    while (now > 10000)
+    {
+      stop();
+    }
 
-	 }
-//	  HAL_Delay(100);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -295,8 +216,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -309,9 +230,8 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -330,10 +250,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C1_Init(void)
 {
 
@@ -360,14 +280,13 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -425,14 +344,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief TIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM3 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM3_Init(void)
 {
 
@@ -482,14 +400,13 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -501,29 +418,27 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4 | GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA0 PA1 PA2 PA3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3;
+  /*Configure GPIO pins : PA0 PA1 PA2 PA3 PA4*/
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA4 PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB10 PB11 PB13
+  /*Configure GPIO pins : PB0 PB10 PB11 PB12 PB13
                            PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -541,7 +456,6 @@ static void MX_GPIO_Init(void)
 
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -549,9 +463,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -563,14 +477,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

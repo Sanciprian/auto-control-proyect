@@ -1,4 +1,7 @@
-Movement.cpp:11:6:void movementInit()	40	static
-Movement.cpp:17:6:void distance()	4	static
-Movement.cpp:18:6:void setSpeed()	4	static
-Movement.cpp:19:6:void stop()	4	static
+Movement.cpp:10:6:void movementInit()	24	static
+Movement.cpp:40:6:void distance()	4	static
+Movement.cpp:41:6:void setSpeed(int)	16	static
+Movement.cpp:48:6:void stop()	8	static
+Movement.cpp:55:6:void updateMovement(uint32_t)	16	static
+Movement.cpp:61:1:void __static_initialization_and_destruction_0(int, int)	16	static
+Movement.cpp:61:1:cpp)	8	static

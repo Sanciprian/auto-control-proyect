@@ -7,150 +7,91 @@
 
 #include "Motor.h"
 
-Motor::Motor(){
-//    this->pinA = {};
-//    this->pinB = 0;
-//    this->encoder = 0;
+Motor::Motor()
+{
+    pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
+}
+void Motor::init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef *_htim)
+{
+    this->pinA = _pinA;
+    this->pinB = _pinB;
+    this->encoder = _encoder;
+    this->pwm_channel = _pwm_channel;
+    this->htim = _htim;
     pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
 }
 
-void Motor::init(Pin enable, Pin pinA, Pin pinB, Pin encoder){
-	this->enable = enable;
-    this->pinA = pinA;
-    this->pinB = pinB;
-    this->encoder = encoder;
+void Motor::set_pwm_forward(uint16_t pwm_value)
+{
+    // Dirección hacia adelante: A = HIGH, B = LOW
+    HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
 
-//    pinMode(pinA, OUTPUT);
-//    pinMode(pinB, OUTPUT);
-//    pinMode(encoder, INPUT_PULLUP);
+    // PWM limitado al ARR máximo
+    uint16_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
+    uint16_t duty = (pwm_value > arr) ? arr : pwm_value;
+
+    // Enviar PWM
+    HAL_TIM_PWM_Start(htim, pwm_channel);
+    __HAL_TIM_SET_COMPARE(htim, pwm_channel, duty);
 }
-
-void Motor::setTimer(TIM_HandleTypeDef* htim, uint32_t channel) {
-    this->htim = htim;
-    this->pwm_channel = channel;
-}
-
-void Motor::encoderInterrupt(){
-    if( io.direction )
-        io.ticks++;
-    else
-        io.ticks--;
-}
-
-void Motor::periodicIO(unsigned long current_time){
-    if (io.direction){
-//        analogWrite(pinA, io.demand);
-//        analogWrite(pinB, 0);
-    } else {
-//        analogWrite(pinA, 0);
-//        analogWrite(pinB, io.demand);
-    }
-
-    //overflow
-    if( std::abs(io.ticks) > 2147483647){
-        io.ticks = 0;
-        io.last_ticks = 0;
-    }
-    io.delta_time = (current_time - io.last_time) / 1000.0;
-    io.delta_ticks = io.ticks - io.last_ticks;
-    io.speed = (io.delta_ticks / io.delta_time) * (Constants::kWheelDiameter * 3.14 / (Constants::kEncoderTicksPerRevolution/2) );
-
-    io.last_ticks = io.ticks;
-    io.last_time = current_time;
-
-}
-
-// Set the speed of the motor in m/s
-void Motor::setSpeed(float speed){
-
-    if( std::abs(speed) < 20 ){
-        stop();
+void Motor::update_motor(uint32_t current_time)
+{
+    float dt = (current_time - last_time_ms) / 1000.0f;
+    if (dt <= 0.0f)
         return;
-    }
 
-    io.direction = speed > 0;
-    float current_speed = pidController.calculate(std::abs(speed), io.speed, io.delta_time);
-    float pwm = current_speed / getMaxVelocity() * 50;
-    setPWM(pwm);
+    delta_ticks = ticks - last_ticks;
+    distance_cm += delta_ticks * Constants::kCMPerTick;
+    actual_speed_cm_s = (delta_ticks * Constants::kCMPerTick) / dt;
+
+    // Convert cm/s to PWM equivalent
+    float max_cm_s = (Constants::kMotorsRPM * 3.14159f * Constants::kWheelDiameter) / 60.0f;
+
+    float error = ((target_speed_cm_s - actual_speed_cm_s) / max_cm_s) * Constants::kMaxPWM;
+    integral += error * dt;
+    float derivative = (error - last_error) / dt;
+
+    float output = kp * error + ki * integral + kd * derivative;
+    pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM); // Clamp to 0–50
+
+    // Dirección hacia adelante
+    HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
+
+    __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)pwm_out);
+    HAL_TIM_PWM_Start(htim, pwm_channel);
+
+    last_error = error;
+    last_ticks = ticks;
+    last_time_ms = current_time;
+}
+void Motor::stop_motor()
+{
+    // Active brake: both inputs HIGH
+    HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);
+
+    // Stop PWM signal
+    __HAL_TIM_SET_COMPARE(htim, pwm_channel, 0);
 }
 
-void Motor::setSpeed(float speed, unsigned long current_time){
-    if( std::abs(speed) < 0.05 ){
-        stop();
-        return;
-    }
-    io.direction = speed > 0;
-    float current_speed = pidController.calculate(std::abs(speed), std::abs(io.speed), (current_time - io.pid_last_time));
-    float pwm = current_speed / getMaxVelocity() * 255;
-    setPWM(pwm);
-    io.pid_last_time = current_time;
+void Motor::setTarget(float _target_speed_cm_s)
+{
+    target_speed_cm_s = _target_speed_cm_s;
 }
 
-// Set the speed of the motor in PWM
-void Motor::setPWM(int pwm){
-	// Asegura que esté dentro del rango y actualiza la demanda
-//	    io.demand = std::min(std::max(std::abs(pwm), Constants::kMotorMinPWM), 50);
-
-	    if (htim == nullptr) return; // Seguridad en caso de que no se haya llamado setTimer()
-
-	    // Dirección física en los pines
-	    if (io.direction) {
-	        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);    // A = HIGH
-	        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);  // B = LOW
-	    } else {
-	        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_RESET);  // A = LOW
-	        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);    // B = HIGH
-	    }
-
-	    // Convertimos pwm (0–255) al valor proporcional a ARR del timer
-	    uint16_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
-	    uint16_t duty = (io.demand * arr) / 255;
-
-	    // Aplicamos PWM
-	    __HAL_TIM_SET_COMPARE(htim, pwm_channel, duty);
-	    HAL_TIM_PWM_Start(htim, pwm_channel);
+float Motor::getDistance()
+{
+    return distance_cm;
 }
 
-// Get the motor current PWM
-int Motor::getPWM(){
-    return io.demand;
+void Motor::addTicks()
+{
+    ticks++;
 }
 
-void Motor::stop(){
-    io.demand = 0;
-//    analogWrite(pinA, 0);
-//    analogWrite(pinB, 0);
-}
-
-void Motor::hardStop(){
-    io.demand = 0;
-//    analogWrite(pinA, 255);
-//    analogWrite(pinB, 255);
-}
-
-float Motor::getMaxVelocity(){
-    return Constants::kWheelDiameter * 3.14 * Constants::kMotorsRPM / 60;
-}
-
-void Motor::resetEncoder(){
-    io.ticks = 0;
-    io.last_ticks = 0;
-    io.delta_ticks = 0;
-    io.speed = 0;
-}
-
-long Motor::getTicks(){
-    return io.ticks;
-}
-
-float Motor::getSpeed(){
-    return io.speed;
-}
-
-float Motor::getTargetSpeed(){
-    return io.target_speed;
-}
-
-void Motor::setVerbose(bool verbose){
-    this->verbose = verbose;
+float Motor::getPWM()
+{
+    return pwm_out;
 }

@@ -13,13 +13,14 @@
 
 void movementInit();
 void distance();
-void setSpeed();
+void setSpeed(int speed);
 void stop();
+void updateMovement(uint32_t current_time);
 
-// Motors //
-extern Motor back_right_motor;
-extern Motor back_left_motor;
-extern Motor front_right_motor;
-extern Motor front_left_motor;
+// Motors
+inline Motor frontLeftMotor;
+inline Motor frontRightMotor;
+inline Motor backLeftMotor;
+inline Motor backRightMotor;
 
 #endif /* MOVvoEMENT_H_ */

@@ -30,7 +30,8 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../USB_DEVICE/App/usb_device.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
  ../USB_DEVICE/Target/usbd_conf.h ../Core/Inc/Constants.h \
- ../Core/Inc/lcd.h
+ ../Core/Inc/lcd.h ../Core/Inc/Motor.h ../Core/Inc/PID.h \
+ ../Core/Inc/Constants.h ../Core/Inc/Movement.h ../Core/Inc/Motor.h
 
 ../Core/Inc/main.h:
 
@@ -99,3 +100,13 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../Core/Inc/Constants.h:
 
 ../Core/Inc/lcd.h:
+
+../Core/Inc/Motor.h:
+
+../Core/Inc/PID.h:
+
+../Core/Inc/Constants.h:
+
+../Core/Inc/Movement.h:
+
+../Core/Inc/Motor.h:
