@@ -46,8 +46,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
-
-int speed = 0;
+// 22,.9 PARA MINIMA
+int speed = 40;
 int target = 463;
 
 int a = 1;
@@ -148,7 +148,7 @@ int main(void)
   movementInit();
 
   /// SPEED
-
+  setSpeed(speed);
   uint32_t last_average_time = 0;
   float total_distance = 0;
 
@@ -160,10 +160,7 @@ int main(void)
   {
     /* USER CODE END WHILE */
     uint32_t now = HAL_GetTick();
-    frontLeftMotor.update_motor(now);
-    frontRightMotor.update_motor(now);
-    backLeftMotor.update_motor(now);
-    backRightMotor.update_motor(now);
+    updateMovement(now);
 
     // float average_distance =
     //     (frontLeftMotor.distance_cm +
@@ -194,10 +191,14 @@ int main(void)
     //   last_average_time = now;
     // }
     char buffer[32];
-    sprintf(buffer, "Dist: %d cm", (int)backRightMotor.getDistance());
+    sprintf(buffer, "Dist: %d cm", (int)frontLeftMotor.getPWM());
     lcd_clean();
     send_msg(buffer);
     HAL_Delay(100);
+    while (now > 10000)
+    {
+      stop();
+    }
 
     /* USER CODE BEGIN 3 */
   }
@@ -422,8 +423,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA0 PA1 PA2 PA3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3;
+  /*Configure GPIO pins : PA0 PA1 PA2 PA3 PA4*/
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -435,9 +436,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB10 PB11 PB13
+  /*Configure GPIO pins : PB0 PB10 PB11 PB12 PB13
                            PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

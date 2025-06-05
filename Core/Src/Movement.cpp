@@ -15,26 +15,26 @@ void movementInit()
         Constants::kFrontLeftB,
         Constants::kFrontLeftEncoder,
         TIM_CHANNEL_1,
-        &htim1);
+        &htim3);
     frontRightMotor.init(
         Constants::kFrontRightA,
         Constants::kFrontRightB,
         Constants::kFrontRightEncoder,
         TIM_CHANNEL_1,
-        &htim3);
+        &htim1);
 
     backRightMotor.init(
         Constants::kBackRightA,
         Constants::kBackRightB,
         Constants::kBackRightEncoder,
-        TIM_CHANNEL_2,
+        TIM_CHANNEL_4,
         &htim3);
 
     backLeftMotor.init(
         Constants::kBackLeftA,
         Constants::kBackLeftB,
         Constants::kBackLeftEncoder,
-        TIM_CHANNEL_3,
+        TIM_CHANNEL_2,
         &htim3);
 }
 void distance() {}
@@ -51,4 +51,11 @@ void stop()
     frontRightMotor.stop_motor();
     backLeftMotor.stop_motor();
     backRightMotor.stop_motor();
+}
+void updateMovement(uint32_t current_time)
+{
+    frontLeftMotor.update_motor(current_time);
+    frontRightMotor.update_motor(current_time);
+    backLeftMotor.update_motor(current_time);
+    backRightMotor.update_motor(current_time);
 }

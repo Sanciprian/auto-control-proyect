@@ -68,14 +68,14 @@ public:
 	inline static constexpr Pin kBackRightEnable = {GPIOB, GPIO_PIN_1};
 
 	// Direction pins (A: fwd, B: bck) //
-	inline static constexpr Pin kFrontLeftA = {GPIOB, GPIO_PIN_11};
-	inline static constexpr Pin kFrontLeftB = {GPIOA, GPIO_PIN_4};
+	inline static constexpr Pin kFrontLeftA = {GPIOB, GPIO_PIN_4};
+	inline static constexpr Pin kFrontLeftB = {GPIOA, GPIO_PIN_11};
 	inline static constexpr Pin kFrontRightA = {GPIOB, GPIO_PIN_10};
 	inline static constexpr Pin kFrontRightB = {GPIOB, GPIO_PIN_0};
 	inline static constexpr Pin kBackLeftA = {GPIOB, GPIO_PIN_13};
 	inline static constexpr Pin kBackLeftB = {GPIOB, GPIO_PIN_14};
-	inline static constexpr Pin kBackRightA = {GPIOB, GPIO_PIN_15};
-	inline static constexpr Pin kBackRightB = {GPIOB, GPIO_PIN_2};
+	inline static constexpr Pin kBackRightA = {GPIOB, GPIO_PIN_12};
+	inline static constexpr Pin kBackRightB = {GPIOB, GPIO_PIN_15};
 
 	// Encoder pins (one per encoder) //
 	inline static constexpr uint16_t kFrontLeftEncoder = GPIO_PIN_1;
@@ -84,15 +84,16 @@ public:
 	inline static constexpr uint16_t kBackRightEncoder = GPIO_PIN_3;
 
 	// PID //
-	inline static constexpr float kMotorKP = 19.0;
-	inline static constexpr float kMotorKI = 3.0;
+	inline static constexpr float kMotorKP = 1.0;
+	inline static constexpr float kMotorKI = 0.0;
 	inline static constexpr float kMotorKImax = 0.05;
-	inline static constexpr float kMotorKD = 8.0;
+	inline static constexpr float kMotorKD = 0.0;
 	inline static constexpr float kMotorMaxOut = 10.0;
 	inline static constexpr float kMotorMinOut = 0.0;
 
 	// PWM Quality //
 	inline static constexpr float kMaxPWM = 50.0f;
+	inline static constexpr float kMinPWM = 30.0f;
 };
 
 #endif /* INC_CONSTANTS_H_ */

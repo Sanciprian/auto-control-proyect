@@ -13,8 +13,9 @@
 
 void movementInit();
 void distance();
-void setSpeed();
+void setSpeed(int speed);
 void stop();
+void updateMovement(uint32_t current_time);
 
 // Motors
 inline Motor frontLeftMotor;

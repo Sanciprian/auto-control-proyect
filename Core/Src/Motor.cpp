@@ -45,12 +45,15 @@ void Motor::update_motor(uint32_t current_time)
     distance_cm += delta_ticks * Constants::kCMPerTick;
     actual_speed_cm_s = (delta_ticks * Constants::kCMPerTick) / dt;
 
-    float error = target_speed_cm_s - actual_speed_cm_s;
+    // Convert cm/s to PWM equivalent
+    float max_cm_s = (Constants::kMotorsRPM * 3.14159f * Constants::kWheelDiameter) / 60.0f;
+
+    float error = ((target_speed_cm_s - actual_speed_cm_s) / max_cm_s) * Constants::kMaxPWM;
     integral += error * dt;
     float derivative = (error - last_error) / dt;
 
     float output = kp * error + ki * integral + kd * derivative;
-    pwm_out = std::min(std::max(output, 0.0f), Constants::kMaxPWM); // PWM (0–50)
+    pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM); // Clamp to 0–50
 
     // Dirección hacia adelante
     HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
@@ -86,4 +89,9 @@ float Motor::getDistance()
 void Motor::addTicks()
 {
     ticks++;
+}
+
+float Motor::getPWM()
+{
+    return pwm_out;
 }

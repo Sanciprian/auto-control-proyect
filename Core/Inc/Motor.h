@@ -50,6 +50,7 @@ public:
     void setTarget(float _target_speed_cm_s);
     float getDistance();
     void addTicks();
+    float getPWM();
 };
 
 #endif /* MOTOR_H_ */
