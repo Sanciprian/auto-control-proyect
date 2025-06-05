@@ -7,10 +7,12 @@
 
 #include "Motor.h"
 
-Motor::Motor(){
+Motor::Motor()
+{
     pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
 }
-void Motor::init(Pin _pinA, Pin _pinB, Pin _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef* _htim){
+void Motor::init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef *_htim)
+{
     this->pinA = _pinA;
     this->pinB = _pinB;
     this->encoder = _encoder;
@@ -19,7 +21,8 @@ void Motor::init(Pin _pinA, Pin _pinB, Pin _encoder, uint32_t _pwm_channel, TIM_
     pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
 }
 
-void Motor::set_pwm_forward(uint16_t pwm_value){
+void Motor::set_pwm_forward(uint16_t pwm_value)
+{
     // Dirección hacia adelante: A = HIGH, B = LOW
     HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
@@ -32,9 +35,11 @@ void Motor::set_pwm_forward(uint16_t pwm_value){
     HAL_TIM_PWM_Start(htim, pwm_channel);
     __HAL_TIM_SET_COMPARE(htim, pwm_channel, duty);
 }
-void Motor::update_motor(uint32_t current_time){
+void Motor::update_motor(uint32_t current_time)
+{
     float dt = (current_time - last_time_ms) / 1000.0f;
-    if (dt <= 0.0f) return;
+    if (dt <= 0.0f)
+        return;
 
     delta_ticks = ticks - last_ticks;
     distance_cm += delta_ticks * Constants::kCMPerTick;
@@ -58,7 +63,8 @@ void Motor::update_motor(uint32_t current_time){
     last_ticks = ticks;
     last_time_ms = current_time;
 }
-void Motor::stop_motor(){
+void Motor::stop_motor()
+{
     // Active brake: both inputs HIGH
     HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);
@@ -67,10 +73,17 @@ void Motor::stop_motor(){
     __HAL_TIM_SET_COMPARE(htim, pwm_channel, 0);
 }
 
-void Motor::setTarget(float _target_speed_cm_s){
+void Motor::setTarget(float _target_speed_cm_s)
+{
     target_speed_cm_s = _target_speed_cm_s;
 }
 
-float Motor::getDistance(){
+float Motor::getDistance()
+{
     return distance_cm;
+}
+
+void Motor::addTicks()
+{
+    ticks++;
 }
