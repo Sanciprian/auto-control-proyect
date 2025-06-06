@@ -84,16 +84,16 @@ public:
 	inline static constexpr uint16_t kBackRightEncoder = GPIO_PIN_3;
 
 	// PID //
-	inline static constexpr float kMotorKP = 1.0;
-	inline static constexpr float kMotorKI = 0.0;
-	inline static constexpr float kMotorKImax = 0.05;
+	inline static constexpr float kMotorKP = 1;
+	inline static constexpr float kMotorKI = 1.8;
+	inline static constexpr float kMotorKImax = 0.0;
 	inline static constexpr float kMotorKD = 0.0;
 	inline static constexpr float kMotorMaxOut = 10.0;
 	inline static constexpr float kMotorMinOut = 0.0;
 
 	// PWM Quality //
-	inline static constexpr float kMaxPWM = 50.0f;
-	inline static constexpr float kMinPWM = 30.0f;
+	inline static constexpr float kMaxPWM = 255.0f;
+	inline static constexpr float kMinPWM = 153.0f;
 };
 
 #endif /* INC_CONSTANTS_H_ */

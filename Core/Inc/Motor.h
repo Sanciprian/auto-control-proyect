@@ -51,6 +51,7 @@ public:
     float getDistance();
     void addTicks();
     float getPWM();
+    float getSpeed();
 };
 
 #endif /* MOTOR_H_ */

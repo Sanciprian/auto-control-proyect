@@ -47,7 +47,7 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 // 22,.9 PARA MINIMA
-int speed = 40;
+int speed = 15;
 int target = 463;
 
 int a = 1;
@@ -126,15 +126,6 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  // EXTI->RTSR |= (1 << 0); // PA0
-  // EXTI->RTSR |= (1 << 1); // PA1
-  // EXTI->RTSR |= (1 << 2); // PA2
-  // EXTI->RTSR |= (1 << 3); // PA3
-
-  // EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
-  // EXTI->FTSR &= ~(1 << 1);
-  // EXTI->FTSR &= ~(1 << 2);
-  // EXTI->FTSR &= ~(1 << 3);
 
   HAL_Init();
   SystemClock_Config();
@@ -151,6 +142,7 @@ int main(void)
   setSpeed(speed);
   uint32_t last_average_time = 0;
   float total_distance = 0;
+  float last_time_print = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -162,13 +154,26 @@ int main(void)
     uint32_t now = HAL_GetTick();
     updateMovement(now);
 
+    int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
+    if (now - last_time_print > 10)
+    {
+      char buffer[32];
+      sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
+      lcd_clean();
+      send_msg(buffer);
+      last_time_print = now;
+    }
+    HAL_Delay(100);
+    while (distancia_entera > 300)
+    {
+      stop();
+    }
     // float average_distance =
     //     (frontLeftMotor.distance_cm +
     //      frontRightMotor.distance_cm +
     //      backRightMotor.distance_cm) /
     //     3.0f;
     // char buffer[32];
-    // int distancia_entera = (int)average_distance;
 
     // while (distancia_entera > target)
     // {
@@ -190,15 +195,6 @@ int main(void)
 
     //   last_average_time = now;
     // }
-    char buffer[32];
-    sprintf(buffer, "Dist: %d cm", (int)frontLeftMotor.getPWM());
-    lcd_clean();
-    send_msg(buffer);
-    HAL_Delay(100);
-    while (now > 10000)
-    {
-      stop();
-    }
 
     /* USER CODE BEGIN 3 */
   }
@@ -302,9 +298,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 71;
+  htim1.Init.Prescaler = 13;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 50;
+  htim1.Init.Period = 255;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -365,9 +361,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 71;
+  htim3.Init.Prescaler = 13;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 50;
+  htim3.Init.Period = 255;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)

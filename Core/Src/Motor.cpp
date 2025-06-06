@@ -53,7 +53,10 @@ void Motor::update_motor(uint32_t current_time)
     float derivative = (error - last_error) / dt;
 
     float output = kp * error + ki * integral + kd * derivative;
-    pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM); // Clamp to 0–50
+    if (target_speed_cm_s - actual_speed_cm_s > 2)
+    {
+        pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM); // Clamp to 0–50
+    }
 
     // Dirección hacia adelante
     HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
@@ -94,4 +97,9 @@ void Motor::addTicks()
 float Motor::getPWM()
 {
     return pwm_out;
+}
+
+float Motor::getSpeed()
+{
+    return actual_speed_cm_s;
 }
