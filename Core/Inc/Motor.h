@@ -34,12 +34,10 @@ private:
     float distance_cm = 0;
     float target_speed_cm_s = 0;
     float actual_speed_cm_s = 0;
-    float kp = Constants::kMotorKP;
-    float ki = Constants::kMotorKI;
-    float kd = Constants::kMotorKD;
     float integral = 0;
     float last_error = 0;
     float pwm_out = 0;
+    float output = 0;
 
 public:
     Motor();
@@ -52,6 +50,7 @@ public:
     void addTicks();
     float getPWM();
     float getSpeed();
+    int getOutput();
 };
 
 #endif /* MOTOR_H_ */

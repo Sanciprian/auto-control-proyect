@@ -9,7 +9,8 @@
 
 Motor::Motor()
 {
-    pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
+    pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD,
+                      Constants::kMinPWM, Constants::kMaxPWM);
 }
 void Motor::init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef *_htim)
 {
@@ -18,7 +19,6 @@ void Motor::init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel,
     this->encoder = _encoder;
     this->pwm_channel = _pwm_channel;
     this->htim = _htim;
-    pidController.set(Constants::kMotorKP, Constants::kMotorKI, Constants::kMotorKD, Constants::kMotorKImax, Constants::kMotorMinOut, Constants::kMotorMaxOut);
 }
 
 void Motor::set_pwm_forward(uint16_t pwm_value)
@@ -47,15 +47,13 @@ void Motor::update_motor(uint32_t current_time)
 
     // Convert cm/s to PWM equivalent
     float max_cm_s = (Constants::kMotorsRPM * 3.14159f * Constants::kWheelDiameter) / 60.0f;
+    float scaled_target_pwm = (target_speed_cm_s / max_cm_s) * Constants::kMaxPWM;
+    float scaled_actual_pwm = (actual_speed_cm_s / max_cm_s) * Constants::kMaxPWM;
 
-    float error = ((target_speed_cm_s - actual_speed_cm_s) / max_cm_s) * Constants::kMaxPWM;
-    integral += error * dt;
-    float derivative = (error - last_error) / dt;
-
-    float output = kp * error + ki * integral + kd * derivative;
-    if (target_speed_cm_s - actual_speed_cm_s > 2)
+    output = pidController.calculate(scaled_target_pwm, scaled_actual_pwm, dt);
+    if (target_speed_cm_s - actual_speed_cm_s > 0.3)
     {
-        pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM); // Clamp to 0–50
+        pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM);
     }
 
     // Dirección hacia adelante
@@ -64,8 +62,6 @@ void Motor::update_motor(uint32_t current_time)
 
     __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)pwm_out);
     HAL_TIM_PWM_Start(htim, pwm_channel);
-
-    last_error = error;
     last_ticks = ticks;
     last_time_ms = current_time;
 }
@@ -102,4 +98,9 @@ float Motor::getPWM()
 float Motor::getSpeed()
 {
     return actual_speed_cm_s;
+}
+
+int Motor::getOutput()
+{
+    return (int)output;
 }

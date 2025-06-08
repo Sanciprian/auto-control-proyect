@@ -28,6 +28,7 @@
 #include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 #include "Movement.h"
+#include "bluetooth_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 // 22,.9 PARA MINIMA
-int speed = 15;
+int speed = 25;
 int target = 463;
 
 int a = 1;
@@ -62,6 +63,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -121,6 +123,8 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
   MX_GPIO_Init();
   MX_I2C1_Init();
@@ -155,47 +159,20 @@ int main(void)
     updateMovement(now);
 
     int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
-    if (now - last_time_print > 10)
+    if (now - last_time_print > 500)
     {
       char buffer[32];
       sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
       lcd_clean();
       send_msg(buffer);
       last_time_print = now;
+      sendMotorSpeeds();
     }
     HAL_Delay(100);
     while (distancia_entera > 300)
     {
       stop();
     }
-    // float average_distance =
-    //     (frontLeftMotor.distance_cm +
-    //      frontRightMotor.distance_cm +
-    //      backRightMotor.distance_cm) /
-    //     3.0f;
-    // char buffer[32];
-
-    // while (distancia_entera > target)
-    // {
-    //   if (a)
-    //   {
-    // sprintf(buffer, "Dist: %d cm", (int)backLeftMotor.ticks);
-    // lcd_clean();
-    // send_msg(buffer);
-    //     a = a - 1;
-    //   }
-    //   stop_all_motors();
-    // }
-    // // Cada 1000 ms: calcular distancia promedio
-    // if (now - last_average_time >= 500)
-    // {
-    //   sprintf(buffer, "Dist: %d cm", (int)backRightMotor.ticks);
-    //   lcd_clean();
-    //   send_msg(buffer);
-
-    //   last_average_time = now;
-    // }
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -396,6 +373,38 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+}
+
+/**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 }
 
 /**

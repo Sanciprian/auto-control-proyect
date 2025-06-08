@@ -1,0 +1,4 @@
+bluetooth_uart.cpp:3:6:void BT_Send(const char*)	16	static
+bluetooth_uart.cpp:8:6:void sendMotorSpeeds()	96	static
+bluetooth_uart.cpp:19:1:void __static_initialization_and_destruction_0(int, int)	16	static
+bluetooth_uart.cpp:19:1:cpp)	8	static
