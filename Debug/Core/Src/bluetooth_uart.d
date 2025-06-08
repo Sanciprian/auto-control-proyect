@@ -30,7 +30,7 @@ Core/Src/bluetooth_uart.o: ../Core/Src/bluetooth_uart.cpp \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h \
  ../Core/Inc/Movement.h ../Core/Inc/Constants.h ../Core/Inc/Motor.h \
- ../Core/Inc/PID.h
+ ../Core/Inc/PID.h ../Core/Inc/BNOController.h ../Core/Inc/BNO055_STM32.h
 
 ../Core/Inc/bluetooth_uart.h:
 
@@ -99,3 +99,7 @@ Core/Src/bluetooth_uart.o: ../Core/Src/bluetooth_uart.cpp \
 ../Core/Inc/Motor.h:
 
 ../Core/Inc/PID.h:
+
+../Core/Inc/BNOController.h:
+
+../Core/Inc/BNO055_STM32.h:

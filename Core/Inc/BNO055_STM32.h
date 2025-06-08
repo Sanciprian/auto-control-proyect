@@ -8,13 +8,16 @@
 #ifndef INC_BNO055_STM32_H_
 #define INC_BNO055_STM32_H_
 
+
 #include <stdint.h>
 #include <stdio.h>
 #include "stm32f1xx_hal.h"
 #include <stdbool.h>
+	// #include "Constants.h"
 
-extern I2C_HandleTypeDef hi2c2;
-#define bno_i2c (hi2c2)
+	extern I2C_HandleTypeDef hi2c1; // 🔧 Esto es la definición real
+
+#define bno_i2c (hi2c1)
 
 #define P_BNO055 (0x28 << 1) /*!I2C Address of BNO055, which is 0x50*/
 #define BNO055_ID 0xA0		 /*!Chip ID of BNO055*/
@@ -216,65 +219,65 @@ extern I2C_HandleTypeDef hi2c2;
 #define PAGE_0 0x00
 #define PAGE_1 0x01
 
-/** ----------------------------------------------------------------------------------------------------
- * 			 					  BNO055 status macros definition
- * ----------------------------------------------------------------------------------------------------
- */
-typedef struct
-{
-	uint8_t STresult; // First 4 bit[0:3] indicates self test resulst 3:ST_MCU, 2:ST_GYRO, 1:ST_MAG, 0:ST_ACCEL
-	uint8_t SYSError; // Contains system error type If SYSStatus is System_Error(0x01)
-	uint8_t SYSStatus;
-} BNO_Status_t;
+	/** ----------------------------------------------------------------------------------------------------
+	 * 			 					  BNO055 status macros definition
+	 * ----------------------------------------------------------------------------------------------------
+	 */
+	typedef struct
+	{
+		uint8_t STresult; // First 4 bit[0:3] indicates self test resulst 3:ST_MCU, 2:ST_GYRO, 1:ST_MAG, 0:ST_ACCEL
+		uint8_t SYSError; // Contains system error type If SYSStatus is System_Error(0x01)
+		uint8_t SYSStatus;
+	} BNO_Status_t;
 
-typedef struct
-{
-	uint8_t System;
-	uint8_t Gyro;
-	uint8_t Acc;
-	uint8_t MAG;
-} Calib_status_t;
+	typedef struct
+	{
+		uint8_t System;
+		uint8_t Gyro;
+		uint8_t Acc;
+		uint8_t MAG;
+	} Calib_status_t;
 
-/** ----------------------------------------------------------------------------------------------------
- * 			 BNO055 Data output structures and  macros definition for ReadData function
- * ----------------------------------------------------------------------------------------------------
- */
-typedef struct
-{ // SENSOR DATA AXIS X, Y and Z
-	float X;
-	float Y;
-	float Z;
-} BNO055_Data_XYZ_t;
+	/** ----------------------------------------------------------------------------------------------------
+	 * 			 BNO055 Data output structures and  macros definition for ReadData function
+	 * ----------------------------------------------------------------------------------------------------
+	 */
+	typedef struct
+	{ // SENSOR DATA AXIS X, Y and Z
+		float X;
+		float Y;
+		float Z;
+	} BNO055_Data_XYZ_t;
 
-typedef struct
-{ // SENSOR DATA AXIS W, X, Y and Z (Only for quaternion data)
-	float W;
-	float X;
-	float Y;
-	float Z;
-} BNO055_QuaData_WXYZ_t;
+	typedef struct
+	{ // SENSOR DATA AXIS W, X, Y and Z (Only for quaternion data)
+		float W;
+		float X;
+		float Y;
+		float Z;
+	} BNO055_QuaData_WXYZ_t;
 
-typedef struct
-{ // SENSOR DATAS
-	BNO055_Data_XYZ_t Accel;
-	BNO055_Data_XYZ_t Gyro;
-	BNO055_Data_XYZ_t Magneto;
-	BNO055_Data_XYZ_t Euler;
-	BNO055_Data_XYZ_t LineerAcc;
-	BNO055_Data_XYZ_t Gravity;
-	BNO055_QuaData_WXYZ_t Quaternion;
-} BNO055_Sensors_t;
+	typedef struct
+	{ // SENSOR DATAS
+		BNO055_Data_XYZ_t Accel;
+		BNO055_Data_XYZ_t Gyro;
+		BNO055_Data_XYZ_t Magneto;
+		BNO055_Data_XYZ_t Euler;
+		BNO055_Data_XYZ_t LineerAcc;
+		BNO055_Data_XYZ_t Gravity;
+		BNO055_QuaData_WXYZ_t Quaternion;
+	} BNO055_Sensors_t;
 
-typedef enum
-{
-	SENSOR_GRAVITY = 0x01,
-	SENSOR_QUATERNION = 0x02,
-	SENSOR_LINACC = 0x04,
-	SENSOR_GYRO = 0x08,
-	SENSOR_ACCEL = 0x10,
-	SENSOR_MAG = 0x20,
-	SENSOR_EULER = 0x40,
-} BNO055_Sensor_Type;
+	typedef enum
+	{
+		SENSOR_GRAVITY = 0x01,
+		SENSOR_QUATERNION = 0x02,
+		SENSOR_LINACC = 0x04,
+		SENSOR_GYRO = 0x08,
+		SENSOR_ACCEL = 0x10,
+		SENSOR_MAG = 0x20,
+		SENSOR_EULER = 0x40,
+	} BNO055_Sensor_Type;
 
 // Base Addresses of output data register
 #define BNO_ACCEL ACCEL_DATA_BASEADDR
@@ -285,37 +288,37 @@ typedef enum
 #define BNO_GRAVITY GRV_DATA_BASEADDR
 #define BNO_QUATERNION QUA_DATA_BASEADDR
 
-/** ----------------------------------------------------------------------------------------------------
- * 			 			   BNO055 Init structure and macros definition
- * ----------------------------------------------------------------------------------------------------
- */
-typedef struct
-{
-	uint8_t Unit_Sel;
-	uint8_t Axis;
-	uint8_t Axis_sign;
-	uint8_t Mode;
-	uint8_t OP_Modes;
-	uint8_t Clock_Source;
-	uint8_t ACC_Range;
-} BNO055_Init_t;
+	/** ----------------------------------------------------------------------------------------------------
+	 * 			 			   BNO055 Init structure and macros definition
+	 * ----------------------------------------------------------------------------------------------------
+	 */
+	typedef struct
+	{
+		uint8_t Unit_Sel;
+		uint8_t Axis;
+		uint8_t Axis_sign;
+		uint8_t Mode;
+		uint8_t OP_Modes;
+		uint8_t Clock_Source;
+		uint8_t ACC_Range;
+	} BNO055_Init_t;
 
-typedef enum
-{						// OPERATION MODES
-	CONFIG_MODE = 0x00, // This is the only mode in which all the writable register map entries can be changed (Except INT , INT_MASK, OPR_MODE)
-	ACC_ONLY = 0x01,
-	MAG_ONLY = 0x02,
-	GYRO_ONLY = 0x03,
-	ACC_MAG = 0x04,
-	ACC_GYRO = 0x05,
-	MAG_GYRO = 0x06,
-	AMG = 0x07,
-	IMU = 0x08,
-	COMPASS = 0x09,
-	M4G = 0x0A,
-	NDOF_FMC_OFF = 0x0B,
-	NDOF = 0x0C
-} Op_Modes_t;
+	typedef enum
+	{						// OPERATION MODES
+		CONFIG_MODE = 0x00, // This is the only mode in which all the writable register map entries can be changed (Except INT , INT_MASK, OPR_MODE)
+		ACC_ONLY = 0x01,
+		MAG_ONLY = 0x02,
+		GYRO_ONLY = 0x03,
+		ACC_MAG = 0x04,
+		ACC_GYRO = 0x05,
+		MAG_GYRO = 0x06,
+		AMG = 0x07,
+		IMU = 0x08,
+		COMPASS = 0x09,
+		M4G = 0x0A,
+		NDOF_FMC_OFF = 0x0B,
+		NDOF = 0x0C
+	} Op_Modes_t;
 
 #define BNO055_NORMAL_MODE 0
 #define BNO055_LOWPOWER_MODE 1
@@ -349,25 +352,26 @@ typedef enum
 #define Range_8G 0x02
 #define Range_16G 0x03
 
-/*
- * BNO055 library function declaration
- */
-void getCalibration(Calib_status_t *calib);
-Op_Modes_t getCurrentMode(void);
-bool isFullyCalibrated(void);
-void setSensorOffsets(const uint8_t *calibData);
-void getSensorOffsets(uint8_t *calibData);
-bool Calibrate_BNO055(void);
+	/*
+	 * BNO055 library function declaration
+	 */
 
-void Set_Operation_Mode(Op_Modes_t Mode);
-void Clock_Source(uint8_t source);
-void SetPowerMODE(uint8_t BNO055_);
-void BNO055_Axis(uint8_t remap, uint8_t sign);
-void SelectPage(uint8_t page);
-void SET_Accel_Range(uint8_t range);
-void BNO055_Init(BNO055_Init_t Init);
-void ReadData(BNO055_Sensors_t *sensorData, BNO055_Sensor_Type sensors);
-void Check_Status(BNO_Status_t *result);
-void ResetBNO055(void);
+	void getCalibration(Calib_status_t *calib);
+	Op_Modes_t getCurrentMode(void);
+	bool isFullyCalibrated(void);
+	void setSensorOffsets(const uint8_t *calibData);
+	void getSensorOffsets(uint8_t *calibData);
+	bool Calibrate_BNO055(void);
+
+	void Set_Operation_Mode(Op_Modes_t Mode);
+	void Clock_Source(uint8_t source);
+	void SetPowerMODE(uint8_t BNO055_);
+	void BNO055_Axis(uint8_t remap, uint8_t sign);
+	void SelectPage(uint8_t page);
+	void SET_Accel_Range(uint8_t range);
+	void BNO055_Init(BNO055_Init_t Init);
+	void ReadData(BNO055_Sensors_t *sensorData, BNO055_Sensor_Type sensors);
+	void Check_Status(BNO_Status_t *result);
+	void ResetBNO055(void);
 
 #endif /* INC_BNO055_STM32_H_ */

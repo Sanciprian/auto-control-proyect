@@ -24,11 +24,18 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
-#include "lcd.h"
+// #include "lcd.h"
 #include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 #include "Movement.h"
 #include "bluetooth_uart.h"
+// #include "BNOController.h"
+
+extern "C"
+{
+#include "lcd.h"
+#include "BNOController.h"
+}
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,8 +54,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+// BNOController bno;
 // 22,.9 PARA MINIMA
-int speed = 25;
+int speed = 15;
 int target = 463;
 
 int a = 1;
@@ -138,6 +146,7 @@ int main(void)
   MX_TIM3_Init();
 
   lcd_begin();
+  bno.init();
   send_msg("Equipo4");
 
   movementInit();
@@ -159,7 +168,7 @@ int main(void)
     updateMovement(now);
 
     int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
-    if (now - last_time_print > 500)
+    if (now - last_time_print > Constants::kTimeDelay * 10)
     {
       char buffer[32];
       sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
@@ -167,11 +176,17 @@ int main(void)
       send_msg(buffer);
       last_time_print = now;
       sendMotorSpeeds();
+      float yaw = bno.getSpeed();
+      sendYaw(yaw);
+      setKinematicSpeeds(speed, now);
     }
-    HAL_Delay(100);
-    while (distancia_entera > 300)
+    HAL_Delay(Constants::kTimeDelay);
+    while (distancia_entera > 1500)
     {
+      float yaw = bno.getYaw();
+      sendYaw(yaw);
       stop();
+      HAL_Delay(Constants::kTimeDelay);
     }
     /* USER CODE BEGIN 3 */
   }

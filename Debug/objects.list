@@ -1,4 +1,5 @@
 "./Core/Src/BNO055.o"
+"./Core/Src/BNOController.o"
 "./Core/Src/Motor.o"
 "./Core/Src/Movement.o"
 "./Core/Src/PID.o"

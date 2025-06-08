@@ -1,5 +1,5 @@
-Core/Src/Movement.o: ../Core/Src/Movement.cpp ../Core/Inc/Movement.h \
- ../Core/Inc/Constants.h \
+Core/Src/BN055Driver.o: ../Core/Src/BN055Driver.cpp \
+ ../Core/Inc/BNO055Driver.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h \
  ../Core/Inc/stm32f1xx_hal_conf.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h \
@@ -29,12 +29,9 @@ Core/Src/Movement.o: ../Core/Src/Movement.cpp ../Core/Inc/Movement.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h \
- ../Core/Inc/Motor.h ../Core/Inc/PID.h ../Core/Inc/BNOController.h \
  ../Core/Inc/BNO055_STM32.h
 
-../Core/Inc/Movement.h:
-
-../Core/Inc/Constants.h:
+../Core/Inc/BNO055Driver.h:
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 
@@ -93,11 +90,5 @@ Core/Src/Movement.o: ../Core/Src/Movement.cpp ../Core/Inc/Movement.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h:
 
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h:
-
-../Core/Inc/Motor.h:
-
-../Core/Inc/PID.h:
-
-../Core/Inc/BNOController.h:
 
 ../Core/Inc/BNO055_STM32.h:

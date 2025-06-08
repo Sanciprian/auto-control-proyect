@@ -6,6 +6,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Core/Src/BNO055.c \
+../Core/Src/lcd.c \
 ../Core/Src/stm32f1xx_hal_msp.c \
 ../Core/Src/stm32f1xx_it.c \
 ../Core/Src/syscalls.c \
@@ -13,16 +14,17 @@ C_SRCS += \
 ../Core/Src/system_stm32f1xx.c 
 
 CPP_SRCS += \
+../Core/Src/BNOController.cpp \
 ../Core/Src/Motor.cpp \
 ../Core/Src/Movement.cpp \
 ../Core/Src/PID.cpp \
 ../Core/Src/bluetooth_uart.cpp \
-../Core/Src/lcd.cpp \
 ../Core/Src/main.cpp \
 ../Core/Src/usb_comms.cpp 
 
 C_DEPS += \
 ./Core/Src/BNO055.d \
+./Core/Src/lcd.d \
 ./Core/Src/stm32f1xx_hal_msp.d \
 ./Core/Src/stm32f1xx_it.d \
 ./Core/Src/syscalls.d \
@@ -31,6 +33,7 @@ C_DEPS += \
 
 OBJS += \
 ./Core/Src/BNO055.o \
+./Core/Src/BNOController.o \
 ./Core/Src/Motor.o \
 ./Core/Src/Movement.o \
 ./Core/Src/PID.o \
@@ -45,11 +48,11 @@ OBJS += \
 ./Core/Src/usb_comms.o 
 
 CPP_DEPS += \
+./Core/Src/BNOController.d \
 ./Core/Src/Motor.d \
 ./Core/Src/Movement.d \
 ./Core/Src/PID.d \
 ./Core/Src/bluetooth_uart.d \
-./Core/Src/lcd.d \
 ./Core/Src/main.d \
 ./Core/Src/usb_comms.d 
 

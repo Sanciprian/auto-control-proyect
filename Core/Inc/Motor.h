@@ -51,6 +51,7 @@ public:
     float getPWM();
     float getSpeed();
     int getOutput();
+    float getTarget();
 };
 
 #endif /* MOTOR_H_ */

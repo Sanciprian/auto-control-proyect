@@ -10,10 +10,17 @@ void sendMotorSpeeds()
     char buffer[64];
     sprintf(buffer,
             "FL:%d FR:%d BL:%d BR:%d\r\n",
-            (int)frontLeftMotor.getSpeed(),
-            (int)frontRightMotor.getSpeed(),
-            (int)backLeftMotor.getSpeed(),
-            (int)backRightMotor.getSpeed());
+            (int)frontLeftMotor.getTarget(),
+            (int)frontRightMotor.getTarget(),
+            (int)backLeftMotor.getTarget(),
+            (int)backRightMotor.getTarget());
 
+    BT_Send(buffer);
+}
+
+void sendYaw(float yaw)
+{
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "Yaw: %d\r\n", (int)yaw);
     BT_Send(buffer);
 }

@@ -51,15 +51,27 @@ void Motor::update_motor(uint32_t current_time)
     float scaled_actual_pwm = (actual_speed_cm_s / max_cm_s) * Constants::kMaxPWM;
 
     output = pidController.calculate(scaled_target_pwm, scaled_actual_pwm, dt);
-    if (target_speed_cm_s - actual_speed_cm_s > 0.3)
+    if (std::abs(target_speed_cm_s - actual_speed_cm_s) > 0.3)
     {
         pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM);
     }
+    if (target_speed_cm_s < 6 && target_speed_cm_s > -6)
+    {
+        pwm_out = 0;
+    }
 
-    // Dirección hacia adelante
-    HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
-
+    if (target_speed_cm_s < -6)
+    {
+        // Direccion hacia atras
+        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);
+    }
+    else
+    {
+        // Dirección hacia adelante
+        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
+    }
     __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)pwm_out);
     HAL_TIM_PWM_Start(htim, pwm_channel);
     last_ticks = ticks;
@@ -103,4 +115,9 @@ float Motor::getSpeed()
 int Motor::getOutput()
 {
     return (int)output;
+}
+
+float Motor::getTarget()
+{
+    return target_speed_cm_s;
 }
