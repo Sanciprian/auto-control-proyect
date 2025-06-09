@@ -20,15 +20,16 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
+#include <cmath>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
-// #include "lcd.h"
 #include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 #include "Movement.h"
 #include "bluetooth_uart.h"
+
 // #include "BNOController.h"
 
 extern "C"
@@ -152,10 +153,17 @@ int main(void)
   movementInit();
 
   /// SPEED
-  setSpeed(speed);
+  setSpeed(0);
   uint32_t last_average_time = 0;
   float total_distance = 0;
-  float last_time_print = HAL_GetTick();
+  uint32_t last_time_print, last_PIDYAW, init_time, dt= HAL_GetTick();
+
+
+  // POS // 
+  float distancia_entera = 0;
+  float delta_x, delta_y = 0; 
+  float pos_x, pos_y = 0;
+  int current_speed = 0; 
 
   /* USER CODE END 2 */
 
@@ -164,30 +172,61 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    uint32_t now = HAL_GetTick();
-    updateMovement(now);
 
-    int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
-    if (now - last_time_print > Constants::kTimeDelay * 10)
+    // Timer // 
+    uint32_t now = HAL_GetTick();
+
+    // PID Updater // 
+    updateMovement(now);
+    if(now - last_PIDYAW >= Constants::kTimeDelay * 5){
+      
+      setKinematicSpeeds(speed, now);
+
+      // Odometry // 
+      dt = (now - last_PIDYAW)/1000.0f; 
+      delta_x = current_speed * cos(bno.getYawRad()) * dt;
+      delta_y = current_speed * sin(bno.getYawRad()) * dt;
+      pos_x += delta_x;
+      pos_y += delta_y;
+
+      last_PIDYAW = now;
+    }
+
+    // Communication Message // 
+    if (now - last_time_print > 250)
     {
+      distancia_entera = ((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
+      
+      // LCD // 
       char buffer[32];
-      sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
+      sprintf(buffer, "(%d,  %d)", (int)pos_x, (int)pos_y);
       lcd_clean();
       send_msg(buffer);
-      last_time_print = now;
+      
+      // Bluetooth //
       sendMotorSpeeds();
-      float yaw = bno.getSpeed();
-      sendYaw(yaw);
-      setKinematicSpeeds(speed, now);
+      // float yaw = bno.getSpeed();
+      // sendYaw(yaw);
+
+      last_time_print = now;
     }
-    HAL_Delay(Constants::kTimeDelay);
-    while (distancia_entera > 1500)
+    
+    // Maquina de Estados //
+    if (now - init_time > 2000){
+      setSpeed(speed);
+      current_speed = speed; 
+    }
+
+    // Stop after a set condition // 
+    while (now - init_time > 3000) // CM por alcanzar
     {
-      float yaw = bno.getYaw();
-      sendYaw(yaw);
-      stop();
-      HAL_Delay(Constants::kTimeDelay);
+      //float yaw = bno.getYaw();
+      //sendYaw(yaw);
+      //stop();
+      //HAL_Delay(Constants::kTimeDelay);
     }
+    
+    HAL_Delay(Constants::kTimeDelay);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

@@ -20,6 +20,7 @@ public:
   float getYawRate(uint32_t currentTimeMs);
   void updateYawControl(uint32_t now);
   float getSpeed();
+  float getYawRad();
 
 private:
   BNO055_Sensors_t data;

@@ -1,4 +1,5 @@
 #include "BNOController.h"
+#include <cmath>
 
 void BNOController::init()
 {
@@ -91,4 +92,9 @@ void BNOController::updateYawControl(uint32_t now)
 float BNOController::getSpeed()
 {
     return speed;
+}
+
+float BNOController::getYawRad(){
+    ReadData(&data, SENSOR_EULER);
+    return data.Euler.X * M_PI / 180.0f; // X es Heading (Yaw) según datasheet
 }

@@ -10,10 +10,10 @@ void sendMotorSpeeds()
     char buffer[64];
     sprintf(buffer,
             "FL:%d FR:%d BL:%d BR:%d\r\n",
-            (int)frontLeftMotor.getTarget(),
-            (int)frontRightMotor.getTarget(),
-            (int)backLeftMotor.getTarget(),
-            (int)backRightMotor.getTarget());
+            (int)frontLeftMotor.getSpeed(),
+            (int)frontRightMotor.getSpeed(),
+            (int)backLeftMotor.getSpeed(),
+            (int)backRightMotor.getSpeed());
 
     BT_Send(buffer);
 }
