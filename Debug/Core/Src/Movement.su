@@ -1,7 +1,10 @@
-Movement.cpp:10:6:void movementInit()	24	static
-Movement.cpp:40:6:void distance()	4	static
-Movement.cpp:41:6:void setSpeed(int)	16	static
-Movement.cpp:48:6:void stop()	8	static
-Movement.cpp:55:6:void updateMovement(uint32_t)	16	static
-Movement.cpp:61:1:void __static_initialization_and_destruction_0(int, int)	16	static
-Movement.cpp:61:1:cpp)	8	static
+PID.h:13:5:constexpr PID::PID()	16	static
+BNOController.h:13:7:BNOController::BNOController()	16	static
+Movement.cpp:11:6:void movementInit()	24	static
+Movement.cpp:41:6:void distance()	4	static
+Movement.cpp:42:6:void setSpeed(int)	16	static
+Movement.cpp:49:6:void stop()	8	static
+Movement.cpp:56:6:void updateMovement(uint32_t)	16	static
+Movement.cpp:67:6:void setKinematicSpeeds(float, uint32_t)	40	static
+Movement.cpp:83:1:void __static_initialization_and_destruction_0(int, int)	16	static
+Movement.cpp:83:1:cpp)	8	static

@@ -24,10 +24,18 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
-#include "lcd.h"
+// #include "lcd.h"
 #include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 #include "Movement.h"
+#include "bluetooth_uart.h"
+// #include "BNOController.h"
+
+extern "C"
+{
+#include "lcd.h"
+#include "BNOController.h"
+}
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,8 +54,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+// BNOController bno;
 // 22,.9 PARA MINIMA
-int speed = 40;
+int speed = 15;
 int target = 463;
 
 int a = 1;
@@ -62,6 +71,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -121,20 +131,13 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  // EXTI->RTSR |= (1 << 0); // PA0
-  // EXTI->RTSR |= (1 << 1); // PA1
-  // EXTI->RTSR |= (1 << 2); // PA2
-  // EXTI->RTSR |= (1 << 3); // PA3
-
-  // EXTI->FTSR &= ~(1 << 0); // Desactiva flanco de bajada (falling)
-  // EXTI->FTSR &= ~(1 << 1);
-  // EXTI->FTSR &= ~(1 << 2);
-  // EXTI->FTSR &= ~(1 << 3);
 
   HAL_Init();
   SystemClock_Config();
@@ -143,6 +146,7 @@ int main(void)
   MX_TIM3_Init();
 
   lcd_begin();
+  bno.init();
   send_msg("Equipo4");
 
   movementInit();
@@ -151,6 +155,7 @@ int main(void)
   setSpeed(speed);
   uint32_t last_average_time = 0;
   float total_distance = 0;
+  float last_time_print = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -162,44 +167,27 @@ int main(void)
     uint32_t now = HAL_GetTick();
     updateMovement(now);
 
-    // float average_distance =
-    //     (frontLeftMotor.distance_cm +
-    //      frontRightMotor.distance_cm +
-    //      backRightMotor.distance_cm) /
-    //     3.0f;
-    // char buffer[32];
-    // int distancia_entera = (int)average_distance;
-
-    // while (distancia_entera > target)
-    // {
-    //   if (a)
-    //   {
-    // sprintf(buffer, "Dist: %d cm", (int)backLeftMotor.ticks);
-    // lcd_clean();
-    // send_msg(buffer);
-    //     a = a - 1;
-    //   }
-    //   stop_all_motors();
-    // }
-    // // Cada 1000 ms: calcular distancia promedio
-    // if (now - last_average_time >= 500)
-    // {
-    //   sprintf(buffer, "Dist: %d cm", (int)backRightMotor.ticks);
-    //   lcd_clean();
-    //   send_msg(buffer);
-
-    //   last_average_time = now;
-    // }
-    char buffer[32];
-    sprintf(buffer, "Dist: %d cm", (int)frontLeftMotor.getPWM());
-    lcd_clean();
-    send_msg(buffer);
-    HAL_Delay(100);
-    while (now > 10000)
+    int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
+    if (now - last_time_print > Constants::kTimeDelay * 10)
     {
-      stop();
+      char buffer[32];
+      sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
+      lcd_clean();
+      send_msg(buffer);
+      last_time_print = now;
+      sendMotorSpeeds();
+      float yaw = bno.getSpeed();
+      sendYaw(yaw);
+      setKinematicSpeeds(speed, now);
     }
-
+    HAL_Delay(Constants::kTimeDelay);
+    while (distancia_entera > 1500)
+    {
+      float yaw = bno.getYaw();
+      sendYaw(yaw);
+      stop();
+      HAL_Delay(Constants::kTimeDelay);
+    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -302,9 +290,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 71;
+  htim1.Init.Prescaler = 13;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 50;
+  htim1.Init.Period = 255;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -365,9 +353,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 71;
+  htim3.Init.Prescaler = 13;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 50;
+  htim3.Init.Period = 255;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -400,6 +388,38 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+}
+
+/**
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 }
 
 /**
