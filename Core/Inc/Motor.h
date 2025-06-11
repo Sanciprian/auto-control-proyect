@@ -21,7 +21,6 @@ private:
     Pin pinA;
     Pin pinB;
     uint16_t encoder;
-    PID pidController;
     TIM_HandleTypeDef *htim;
     uint32_t pwm_channel;
     uint32_t last_time_ms = 0;
@@ -39,10 +38,18 @@ private:
     float pwm_out = 0;
     float output = 0;
 
+    // PID //
+    PID pidController;
+    float kp;
+    float ki;
+    float kd;
+    float N;
+
 public:
-    Motor();
+    Motor(float KP, float KI, float KD, float Ns);
     void init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef *_htim);
     void set_pwm_forward(uint16_t pwm_value);
+    void set_pwm_backward(uint16_t pwm_value);
     void update_motor(uint32_t current_time);
     void stop_motor();
     void setTarget(float _target_speed_cm_s);
@@ -52,6 +59,7 @@ public:
     float getSpeed();
     int getOutput();
     float getTarget();
+    void updateWithoutPID(uint32_t current_time);
 };
 
 #endif /* MOTOR_H_ */

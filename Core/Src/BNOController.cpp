@@ -14,7 +14,7 @@ void BNOController::init()
 
     BNO055_Init(config);
 
-    yawPID.set(Constants::kBNOKP, Constants::kBNOKI, Constants::kBNOKD, Constants::kBNOMinAngular, Constants::KBNOMaxAngular);
+    yawPID.set(Constants::kBNOKP, Constants::kBNOKI, Constants::kBNOKD, Constants::kBNOMinAngular, Constants::KBNOMaxAngular, Constants::kBNON);
 }
 
 float BNOController::getYaw()
@@ -94,7 +94,8 @@ float BNOController::getSpeed()
     return speed;
 }
 
-float BNOController::getYawRad(){
+float BNOController::getYawRad()
+{
     ReadData(&data, SENSOR_EULER);
     return data.Euler.X * M_PI / 180.0f; // X es Heading (Yaw) según datasheet
 }

@@ -51,10 +51,10 @@ public:
 	inline static constexpr float kBNOKP = 1.0;
 	inline static constexpr float kBNOKI = 0.0;
 	inline static constexpr float kBNOKD = 0.0;
-	inline static constexpr float kBNOKImax = 0.1;
 	inline static constexpr float KBNOMaxAngular = 250.0;
 	inline static constexpr float kBNOMinAngular = -250.0;
 	inline static constexpr float kAngleTolerance = 2.0;
+	inline static constexpr float kBNON = 2.0;
 
 	// Motor General //
 	inline static constexpr float kMotorsRPM = 100;														 // meters
@@ -84,7 +84,7 @@ public:
 	inline static constexpr uint16_t kBackLeftEncoder = GPIO_PIN_2;
 	inline static constexpr uint16_t kBackRightEncoder = GPIO_PIN_3;
 
-	// PID //
+	// PID // Ya no se usa
 	inline static constexpr float kMotorKP = 2.0;
 	inline static constexpr float kMotorKI = 0.0;
 	inline static constexpr float kMotorKImax = 0.0;
@@ -94,6 +94,35 @@ public:
 
 	// PWM Quality //
 	inline static constexpr float kMaxPWM = 255.0f;
-	inline static constexpr float kMinPWM = 153.0f;
+	inline static constexpr float kMinPWM = -255.0f;
+
+	/*
+	 *
+	 * PID Motores
+	 * left right
+	 * */
+	// FRONT LEFT //
+	inline static constexpr float kFrontLeftKP = 0.177164;
+	inline static constexpr float kFrontLeftKI = 24.0612;
+	inline static constexpr float kFrontLeftKD = -0.00598361;
+	inline static constexpr float kFrontLeftN = 27.2220;
+
+	// FRONT RIGHT //
+	inline static constexpr float kFrontRightKP = 0.177770;
+	inline static constexpr float kFrontRightKI = 22.5228;
+	inline static constexpr float kFrontRightKD = -0.00649922;
+	inline static constexpr float kFrontRightN = 25.2957;
+
+	// BACK LEFT //
+	inline static constexpr float kBackLeftKP = 0.176407;
+	inline static constexpr float kBackLeftKI = 22.1301;
+	inline static constexpr float kBackLeftKD = -0.00652223;
+	inline static constexpr float kBackLeftN = 25.0333;
+
+	// BACK RIGHT //
+	inline static constexpr float kBackRightKP = 0.199595;
+	inline static constexpr float kBackRightKI = 24.5142;
+	inline static constexpr float kBackRightKD = -0.00755871;
+	inline static constexpr float kBackRightN = 24.4810;
 };
 #endif /* INC_CONSTANTS_H_ */

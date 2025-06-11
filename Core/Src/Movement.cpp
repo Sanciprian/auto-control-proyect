@@ -81,3 +81,11 @@ void setKinematicSpeeds(float _linear_x_cm_s, uint32_t current_time)
     frontRightMotor.setTarget(right_speed);
     backRightMotor.setTarget(right_speed);
 }
+
+void updateWithoutPID(uint32_t current_time){
+	frontLeftMotor.updateWithoutPID(current_time);
+	frontRightMotor.updateWithoutPID(current_time);
+	backLeftMotor.updateWithoutPID(current_time);
+	backRightMotor.updateWithoutPID(current_time);
+
+}

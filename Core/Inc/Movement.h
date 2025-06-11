@@ -18,12 +18,13 @@ void setSpeed(int speed);
 void stop();
 void updateMovement(uint32_t current_time);
 void setKinematicSpeeds(float _linear_x_cm_s, uint32_t current_time);
+void updateWithoutPID(uint32_t current_time);
 
 // Motors
-inline Motor frontLeftMotor;
-inline Motor frontRightMotor;
-inline Motor backLeftMotor;
-inline Motor backRightMotor;
+inline Motor frontLeftMotor(Constants::kFrontLeftKP, Constants::kFrontLeftKI, Constants::kFrontLeftKD, Constants::kFrontLeftN);
+inline Motor frontRightMotor(Constants::kFrontRightKP, Constants::kFrontRightKI, Constants::kFrontRightKD, Constants::kFrontRightN);
+inline Motor backLeftMotor(Constants::kBackLeftKP, Constants::kBackLeftKI, Constants::kBackLeftKD, Constants::kBackLeftN);
+inline Motor backRightMotor(Constants::kBackRightKP, Constants::kBackRightKI, Constants::kBackRightKD, Constants::kBackRightN);
 inline BNOController bno;
 
 #endif /* MOVvoEMENT_H_ */
