@@ -20,6 +20,8 @@ public:
   float getYawRate(uint32_t currentTimeMs);
   void updateYawControl(uint32_t now);
   float getSpeed();
+  float getYawRad();
+  float getError();
 
 private:
   BNO055_Sensors_t data;
@@ -28,6 +30,7 @@ private:
   float lastYaw = 0.0f;
   float speed = 0.0f;
   uint32_t lastTime = 0;
+  float error = 0;
 };
 
 #endif // BNO_CONTROLLER_H

@@ -39,22 +39,22 @@ private:
 	/* data */
 public:
 	// Drive constants //
-	inline static constexpr float kWheelDiameter = 7.3; // cm
-	inline static constexpr float kWheelTrack = 13.0;	// cambiar a cm
+	inline static constexpr float kWheelDiameter = 6.7; // cm
+	inline static constexpr float kWheelTrack = 20.0;	// cambiar a cm
 	inline static constexpr float kWheelBase = 0.155;	// meters
 	inline static constexpr float kDriveKP = 0.017;
 	inline static constexpr float kDriveKD = 0.00;
 	inline static constexpr float kDriveKI = 0.00;
-	inline static constexpr int kTimeDelay = 10;
+	inline static constexpr int kTimeDelay = 20;
 
 	// BNO //
-	inline static constexpr float kBNOKP = 1.0;
+	inline static constexpr float kBNOKP = 20;
 	inline static constexpr float kBNOKI = 0.0;
-	inline static constexpr float kBNOKD = 0.0;
-	inline static constexpr float kBNOKImax = 0.1;
-	inline static constexpr float KBNOMaxAngular = 250.0;
-	inline static constexpr float kBNOMinAngular = -250.0;
+	inline static constexpr float kBNOKD = 0.1;
+	inline static constexpr float KBNOMaxAngular = 60.0;
+	inline static constexpr float kBNOMinAngular = -60.0;
 	inline static constexpr float kAngleTolerance = 2.0;
+	inline static constexpr float kBNON = 0;
 
 	// Motor General //
 	inline static constexpr float kMotorsRPM = 100;														 // meters
@@ -69,14 +69,14 @@ public:
 	inline static constexpr Pin kBackRightEnable = {GPIOB, GPIO_PIN_1};
 
 	// Direction pins (A: fwd, B: bck) //
-	inline static constexpr Pin kFrontLeftA = {GPIOB, GPIO_PIN_4};
-	inline static constexpr Pin kFrontLeftB = {GPIOA, GPIO_PIN_11};
+	inline static constexpr Pin kFrontLeftA = {GPIOA, GPIO_PIN_4};
+	inline static constexpr Pin kFrontLeftB = {GPIOB, GPIO_PIN_11};
 	inline static constexpr Pin kFrontRightA = {GPIOB, GPIO_PIN_10};
 	inline static constexpr Pin kFrontRightB = {GPIOB, GPIO_PIN_0};
-	inline static constexpr Pin kBackLeftA = {GPIOB, GPIO_PIN_13};
-	inline static constexpr Pin kBackLeftB = {GPIOB, GPIO_PIN_14};
-	inline static constexpr Pin kBackRightA = {GPIOB, GPIO_PIN_12};
-	inline static constexpr Pin kBackRightB = {GPIOB, GPIO_PIN_15};
+	inline static constexpr Pin kBackLeftA = {GPIOB, GPIO_PIN_14};
+	inline static constexpr Pin kBackLeftB = {GPIOB, GPIO_PIN_13};
+	inline static constexpr Pin kBackRightA = {GPIOB, GPIO_PIN_15};
+	inline static constexpr Pin kBackRightB = {GPIOB, GPIO_PIN_12};
 
 	// Encoder pins (one per encoder) //
 	inline static constexpr uint16_t kFrontLeftEncoder = GPIO_PIN_1;
@@ -84,8 +84,8 @@ public:
 	inline static constexpr uint16_t kBackLeftEncoder = GPIO_PIN_2;
 	inline static constexpr uint16_t kBackRightEncoder = GPIO_PIN_3;
 
-	// PID //
-	inline static constexpr float kMotorKP = 2.0;
+	// PID // Ya no se usa
+	inline static constexpr float kMotorKP = 1.0;
 	inline static constexpr float kMotorKI = 0.0;
 	inline static constexpr float kMotorKImax = 0.0;
 	inline static constexpr float kMotorKD = 0.0;
@@ -94,6 +94,35 @@ public:
 
 	// PWM Quality //
 	inline static constexpr float kMaxPWM = 255.0f;
-	inline static constexpr float kMinPWM = 153.0f;
+	inline static constexpr float kMinPWM = -255.0f;
+
+	/*
+	 *
+	 * PID Motores
+	 * left right
+	 * */
+	// FRONT LEFT //
+	inline static constexpr float kFrontLeftKP = 0.00056125968190998;
+	inline static constexpr float kFrontLeftKI = 1.12251936381996;
+	inline static constexpr float kFrontLeftKD = 0;
+	inline static constexpr float kFrontLeftN = 100;
+
+	// FRONT RIGHT //
+	inline static constexpr float kFrontRightKP = 0.00056593200177646;
+	inline static constexpr float kFrontRightKI = 1.13186400355292;
+	inline static constexpr float kFrontRightKD = 0;
+	inline static constexpr float kFrontRightN = 100;
+
+	// BACK LEFT //
+	inline static constexpr float kBackLeftKP = 0.000561966706009508;
+	inline static constexpr float kBackLeftKI = 1.12393341201902;
+	inline static constexpr float kBackLeftKD = 0;
+	inline static constexpr float kBackLeftN = 100;
+
+	// BACK RIGHT //
+	inline static constexpr float kBackRightKP = 0.000543404859085147;
+	inline static constexpr float kBackRightKI = 1.08680971817029;
+	inline static constexpr float kBackRightKD = 0;
+	inline static constexpr float kBackRightN = 100;
 };
 #endif /* INC_CONSTANTS_H_ */
