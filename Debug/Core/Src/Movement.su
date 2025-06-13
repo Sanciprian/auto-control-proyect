@@ -6,6 +6,9 @@ Movement.cpp:42:6:void setSpeed(int)	16	static
 Movement.cpp:49:6:void stop()	8	static
 Movement.cpp:56:6:void updateMovement(uint32_t)	16	static
 Movement.cpp:67:6:void setKinematicSpeeds(float, uint32_t)	40	static
-Movement.cpp:85:6:void updateWithoutPID(uint32_t)	16	static
-Movement.cpp:91:1:void __static_initialization_and_destruction_0(int, int)	24	static
-Movement.cpp:91:1:cpp)	8	static
+Movement.cpp:130:6:void updateWithoutPID(uint32_t)	16	static
+Movement.cpp:138:6:void setRotation(bool)	16	static
+Movement.cpp:156:6:void setForward()	8	static
+Movement.cpp:163:6:void setBackward()	8	static
+Movement.cpp:169:1:void __static_initialization_and_destruction_0(int, int)	24	static
+Movement.cpp:169:1:cpp)	8	static

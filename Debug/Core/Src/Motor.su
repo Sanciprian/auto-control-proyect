@@ -5,14 +5,17 @@ Motor.cpp:14:6:void Motor::init(Pin, Pin, uint16_t, uint32_t, TIM_HandleTypeDef*
 Motor.cpp:23:6:void Motor::set_pwm_forward(uint16_t)	24	static
 Motor.cpp:37:6:void Motor::set_pwm_backward(uint16_t)	24	static
 Motor.cpp:51:6:void Motor::update_motor(uint32_t)	40	static
-Motor.cpp:91:6:void Motor::stop_motor()	16	static
-Motor.cpp:101:6:void Motor::setTarget(float)	16	static
-Motor.cpp:106:7:float Motor::getDistance()	16	static
-Motor.cpp:111:6:void Motor::addTicks()	16	static
-Motor.cpp:116:7:float Motor::getPWM()	16	static
-Motor.cpp:121:7:float Motor::getSpeed()	16	static
-Motor.cpp:126:5:int Motor::getOutput()	16	static
-Motor.cpp:131:7:float Motor::getTarget()	16	static
-Motor.cpp:136:6:void Motor::updateWithoutPID(uint32_t)	32	static
+Motor.cpp:88:6:void Motor::stop_motor()	16	static
+Motor.cpp:98:6:void Motor::setTarget(float)	16	static
+Motor.cpp:103:7:float Motor::getDistance()	16	static
+Motor.cpp:108:6:void Motor::addTicks()	16	static
+Motor.cpp:113:7:float Motor::getPWM()	16	static
+Motor.cpp:118:7:float Motor::getSpeed()	16	static
+Motor.cpp:123:5:int Motor::getOutput()	16	static
+Motor.cpp:128:7:float Motor::getTarget()	16	static
+Motor.cpp:133:6:void Motor::updateWithoutPID(uint32_t)	32	static
+Motor.cpp:144:6:void Motor::setDir(bool)	16	static
+Motor.cpp:160:6:void Motor::forward()	16	static
+Motor.cpp:165:6:void Motor::backward()	16	static
 stl_algobase.h:222:5:constexpr const _Tp& std::max(const _Tp&, const _Tp&) [with _Tp = float]	16	static
 stl_algobase.h:198:5:constexpr const _Tp& std::min(const _Tp&, const _Tp&) [with _Tp = float]	16	static

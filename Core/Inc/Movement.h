@@ -19,6 +19,9 @@ void stop();
 void updateMovement(uint32_t current_time);
 void setKinematicSpeeds(float _linear_x_cm_s, uint32_t current_time);
 void updateWithoutPID(uint32_t current_time);
+void setRotation(bool dir);
+void setForward();
+void setBackward();
 
 // Motors
 inline Motor frontLeftMotor(Constants::kFrontLeftKP, Constants::kFrontLeftKI, Constants::kFrontLeftKD, Constants::kFrontLeftN);

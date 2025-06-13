@@ -9,7 +9,7 @@
 inline UART_HandleTypeDef huart1;
 
 void BT_Send(const char *msg);
-void sendMotorSpeeds(int pwm, float yaw);
+void sendMotorSpeeds(int pwm, float yaw, float error);
 void sendYaw(float yaw);
 
 #endif // BLUETOOTH_UART_H

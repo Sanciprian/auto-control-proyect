@@ -37,6 +37,7 @@ private:
     float last_error = 0;
     float pwm_out = 0;
     float output = 0;
+    bool dir = false;
 
     // PID //
     PID pidController;
@@ -60,6 +61,9 @@ public:
     int getOutput();
     float getTarget();
     void updateWithoutPID(uint32_t current_time);
+    void setDir(bool temp_dir);
+    void forward();
+    void backward();
 };
 
 #endif /* MOTOR_H_ */

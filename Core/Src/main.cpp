@@ -59,7 +59,10 @@ I2C_HandleTypeDef hi2c1;
 // 22,.9 PARA MINIMA
 int speed = 15;
 int target = 463;
+int square_size = 100;
+int current_angle_algorithm = 0;
 int a = 1;
+bool on_Wait = false;
 
 /* USER CODE BEGIN PV */
 
@@ -97,8 +100,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // PRBS //
-bool b1, b2, b3, b4 = false;
-bool b5, b6, b7, b8, b9 = true;
+bool b1, b2, b6, b9, b11 = false;
+bool b5, b3, b7, b8, b4, b10 = true;
 void PRBS();
 
 /* USER CODE END 0 */
@@ -157,16 +160,19 @@ int main(void)
 
   /// SPEED
   setSpeed(speed);
+  // bno.setTargetYaw(90);
   uint32_t last_average_time = 0;
   float total_distance = 0;
   uint32_t last_time_print, last_PIDYAW, dt = HAL_GetTick();
-  uint32_t init_time = HAL_GetTick();
+  uint32_t init_time, stop_pls = HAL_GetTick();
 
   // POS //
   float distancia_entera = 0;
   float delta_x, delta_y = 0;
   float pos_x, pos_y = 0;
   int current_speed = 0;
+  float last_size = 0;
+  float iteration = 0;
 
   // frontLeftMotor.set_pwm_forward(153);
   // frontRightMotor.set_pwm_forward(153);
@@ -183,12 +189,13 @@ int main(void)
     // Timer //
     uint32_t now = HAL_GetTick();
     // updateWithoutPID(now);
+    updateMovement(now);
 
     // PID Updater //
-    updateMovement(now);
-    if (now - last_PIDYAW >= Constants::kTimeDelay * 10)
+
+    if (now - last_PIDYAW >= 100)
     {
-      // setKinematicSpeeds(speed, now);
+      setKinematicSpeeds(speed, now);
 
       // Odometry //
       dt = (now - last_PIDYAW) / 1000.0f;
@@ -201,38 +208,66 @@ int main(void)
     }
 
     // Communication Message //
-    if (now - last_time_print > 250)
+    if (now - last_time_print > 100)
     {
 
       distancia_entera = ((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
 
       // LCD //
-      char buffer[32];
-      sprintf(buffer, "(%d,  %d)", (int)pos_x, (int)pos_y);
-      lcd_clean();
-      send_msg(buffer);
+      // char buffer[32];
+      // sprintf(buffer, "(%d,  %d)", (int)pos_x, (int)pos_y);
+      // lcd_clean();
+      // send_msg(buffer);
 
       // Bluetooth //
-      sendMotorSpeeds(b9, bno.getYaw());
+      sendMotorSpeeds(distancia_entera, bno.getYaw(), bno.getError());
       // float yaw = bno.getSpeed();
       // sendYaw(yaw);
 
       last_time_print = now;
-      // if (b9)
+      // if (b11)
       // {
-      //   frontLeftMotor.set_pwm_forward(255);
-      //   frontRightMotor.set_pwm_forward(255);
-      //   backLeftMotor.set_pwm_forward(255);
-      //   backRightMotor.set_pwm_forward(255);
+      //   setRotation(true);
       // }
       // else
       // {
-      //   frontLeftMotor.set_pwm_backward(255);
-      //   frontRightMotor.set_pwm_backward(255);
-      //   backLeftMotor.set_pwm_backward(255);
-      //   backRightMotor.set_pwm_backward(255);
+      //   setRotation(false);
       // }
       // PRBS();
+    }
+
+    if (distancia_entera - last_size >= square_size && iteration <= 3)
+    {
+      on_Wait = true;
+      speed = 0;
+      setSpeed(speed);
+      current_angle_algorithm += 90;
+      bno.setTargetYaw(current_angle_algorithm);
+      last_size = distancia_entera;
+      stop_pls = now;
+      iteration++;
+    }
+
+    if (on_Wait && !(std::abs(current_angle_algorithm - bno.getYaw()) <= 10))
+    {
+      stop_pls = now;
+      last_size = distancia_entera;
+    }
+
+    if (on_Wait && now - stop_pls >= 10000)
+    {
+      if (iteration <= 3)
+      {
+        speed = 15;
+      }
+      else
+      {
+        speed = 0;
+      }
+
+      on_Wait = false;
+      setSpeed(speed);
+      last_size = distancia_entera;
     }
 
     // Maquina de Estados //
@@ -246,13 +281,13 @@ int main(void)
     //    }
 
     // Stop after a set condition //
-    while (now - init_time > 20000) // CM por alcanzar
-    {
-      // float yaw = bno.getYaw();
-      // sendYaw(yaw);
-      stop();
-      // HAL_Delay(Constants::kTimeDelay);
-    }
+    // while (now - init_time > 20000) // CM por alcanzar
+    // {
+    //   // float yaw = bno.getYaw();
+    //   // sendYaw(yaw);
+    //   stop();
+    //   // HAL_Delay(Constants::kTimeDelay);
+    // }
 
     HAL_Delay(Constants::kTimeDelay);
     /* USER CODE BEGIN 3 */
@@ -549,9 +584,11 @@ static void MX_GPIO_Init(void)
 void PRBS()
 {
   // Tap en b9 y b5 → XOR para retroalimentación
-  bool feedback = b9 ^ b5;
+  bool feedback = b11 ^ b9;
 
-  // Shift register (de derecha a izquierda: b9 ← b8 ← ... ← b1)
+  // Shift (de derecha a izquierda: b11 ← b10 ← ... ← b1)
+  b11 = b10;
+  b10 = b9;
   b9 = b8;
   b8 = b7;
   b7 = b6;
@@ -560,7 +597,7 @@ void PRBS()
   b4 = b3;
   b3 = b2;
   b2 = b1;
-  b1 = feedback; // nuevo valor entra al registro
+  b1 = feedback; // nuevo bit entra por la izquierda
 }
 /* USER CODE END 4 */
 

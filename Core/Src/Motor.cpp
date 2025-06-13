@@ -9,7 +9,7 @@
 
 Motor::Motor(float KP, float KI, float KD, float Ns)
 {
-    pidController.set(KP, KI, KD, Constants::kMinPWM, Constants::kMaxPWM, Ns);
+    pidController.set(KP, KI, KD, 0, Constants::kMaxPWM, Ns);
 }
 void Motor::init(Pin _pinA, Pin _pinB, uint16_t _encoder, uint32_t _pwm_channel, TIM_HandleTypeDef *_htim)
 {
@@ -69,21 +69,18 @@ void Motor::update_motor(uint32_t current_time)
         pwm_out = std::min(std::max(output, Constants::kMinPWM), Constants::kMaxPWM);
     }
 
-    if (pwm_out < 0)
-    {
-        // Direccion hacia atras
-        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);
-        __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)(pwm_out * -1));
-    }
-    else
-    {
-        // Dirección hacia adelante
-        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
-        __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)pwm_out);
-    }
-
+    // if (target_speed_cm_s < 0)
+    // {
+    //     // Direccion hacia atras
+    //     setDir(!dir);
+    //     __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)(pwm_out));
+    // }
+    // else
+    // {
+    //     // Dirección hacia adelante
+    //     setDir(dir);
+    // }
+    __HAL_TIM_SET_COMPARE(htim, pwm_channel, (uint16_t)pwm_out);
     HAL_TIM_PWM_Start(htim, pwm_channel);
     last_ticks = ticks;
     last_time_ms = current_time;
@@ -142,4 +139,30 @@ void Motor::updateWithoutPID(uint32_t current_time)
     actual_speed_cm_s = (delta_ticks * Constants::kCMPerTick) / dt;
     last_ticks = ticks;
     last_time_ms = current_time;
+}
+
+void Motor::setDir(bool temp_dir)
+{
+    if (!temp_dir)
+    {
+        // Adelante
+        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_RESET);
+    }
+    else
+    {
+        // Atras
+        HAL_GPIO_WritePin(pinA.port, pinA.pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(pinB.port, pinB.pin, GPIO_PIN_SET);
+    }
+}
+
+void Motor::forward()
+{
+    dir = false;
+}
+
+void Motor::backward()
+{
+    dir = true;
 }
