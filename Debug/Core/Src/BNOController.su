@@ -1,9 +1,9 @@
-BNOController.cpp:3:6:void BNOController::init()	32	static
-BNOController.cpp:19:7:float BNOController::getYaw()	16	static
-BNOController.cpp:25:6:void BNOController::setTargetYaw(float)	16	static
-BNOController.cpp:30:7:float BNOController::computeYawPID(float, float)	24	static
-BNOController.cpp:34:7:float BNOController::getYawRate(uint32_t)	32	static
-BNOController.cpp:58:6:void BNOController::updateYawControl(uint32_t)	32	static
-BNOController.cpp:91:7:float BNOController::getSpeed()	16	static
-stl_algobase.h:222:5:constexpr const _Tp& std::max(const _Tp&, const _Tp&) [with _Tp = float]	16	static
-stl_algobase.h:198:5:constexpr const _Tp& std::min(const _Tp&, const _Tp&) [with _Tp = float]	16	static
+BNOController.cpp:4:6:void BNOController::init()	40	static
+BNOController.cpp:23:7:float BNOController::getYaw()	16	static
+BNOController.cpp:29:6:void BNOController::setTargetYaw(float)	16	static
+BNOController.cpp:34:7:float BNOController::computeYawPID(float, float)	24	static
+BNOController.cpp:38:7:float BNOController::getYawRate(uint32_t)	32	static
+BNOController.cpp:62:6:void BNOController::updateYawControl(uint32_t)	32	static
+BNOController.cpp:106:7:float BNOController::getSpeed()	16	static
+BNOController.cpp:111:7:float BNOController::getYawRad()	16	static
+BNOController.cpp:117:7:float BNOController::getError()	16	static

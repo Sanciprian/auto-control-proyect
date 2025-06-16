@@ -20,15 +20,16 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
+#include <cmath>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "Constants.h"
-// #include "lcd.h"
 #include "Motor.h"
 #include "stm32f1xx_hal_tim.h"
 #include "Movement.h"
 #include "bluetooth_uart.h"
+
 // #include "BNOController.h"
 
 extern "C"
@@ -58,8 +59,10 @@ I2C_HandleTypeDef hi2c1;
 // 22,.9 PARA MINIMA
 int speed = 15;
 int target = 463;
-
+int square_size = 100;
+int current_angle_algorithm = 0;
 int a = 1;
+bool on_Wait = false;
 
 /* USER CODE BEGIN PV */
 
@@ -96,6 +99,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// PRBS //
+bool b1, b2, b6, b9, b11 = false;
+bool b5, b3, b7, b8, b4, b10 = true;
+void PRBS();
 
 /* USER CODE END 0 */
 
@@ -153,10 +160,24 @@ int main(void)
 
   /// SPEED
   setSpeed(speed);
+  // bno.setTargetYaw(90);
   uint32_t last_average_time = 0;
   float total_distance = 0;
-  float last_time_print = HAL_GetTick();
+  uint32_t last_time_print, last_PIDYAW, dt = HAL_GetTick();
+  uint32_t init_time, stop_pls = HAL_GetTick();
 
+  // POS //
+  float distancia_entera = 0;
+  float delta_x, delta_y = 0;
+  float pos_x, pos_y = 0;
+  int current_speed = 0;
+  float last_size = 0;
+  float iteration = 0;
+
+  // frontLeftMotor.set_pwm_forward(153);
+  // frontRightMotor.set_pwm_forward(153);
+  // backLeftMotor.set_pwm_forward(153);
+  // backRightMotor.set_pwm_forward(153);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -164,30 +185,111 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+    // Timer //
     uint32_t now = HAL_GetTick();
+    // updateWithoutPID(now);
     updateMovement(now);
 
-    int distancia_entera = (int)((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
-    if (now - last_time_print > Constants::kTimeDelay * 10)
+    // PID Updater //
+
+    if (now - last_PIDYAW >= 100)
     {
-      char buffer[32];
-      sprintf(buffer, "Vel %d Dis  %d", (int)frontLeftMotor.getSpeed(), distancia_entera);
-      lcd_clean();
-      send_msg(buffer);
-      last_time_print = now;
-      sendMotorSpeeds();
-      float yaw = bno.getSpeed();
-      sendYaw(yaw);
       setKinematicSpeeds(speed, now);
+
+      // Odometry //
+      dt = (now - last_PIDYAW) / 1000.0f;
+      delta_x = current_speed * cos(bno.getYawRad()) * dt;
+      delta_y = current_speed * sin(bno.getYawRad()) * dt;
+      pos_x += delta_x;
+      pos_y += delta_y;
+
+      last_PIDYAW = now;
     }
-    HAL_Delay(Constants::kTimeDelay);
-    while (distancia_entera > 1500)
+
+    // Communication Message //
+    if (now - last_time_print > 100)
     {
-      float yaw = bno.getYaw();
-      sendYaw(yaw);
-      stop();
-      HAL_Delay(Constants::kTimeDelay);
+
+      distancia_entera = ((backLeftMotor.getDistance() + backRightMotor.getDistance() + frontLeftMotor.getDistance() + frontRightMotor.getDistance()) / 4);
+
+      // LCD //
+      // char buffer[32];
+      // sprintf(buffer, "(%d,  %d)", (int)pos_x, (int)pos_y);
+      // lcd_clean();
+      // send_msg(buffer);
+
+      // Bluetooth //
+      sendMotorSpeeds(distancia_entera, bno.getYaw(), bno.getError());
+      // float yaw = bno.getSpeed();
+      // sendYaw(yaw);
+
+      last_time_print = now;
+      // if (b11)
+      // {
+      //   setRotation(true);
+      // }
+      // else
+      // {
+      //   setRotation(false);
+      // }
+      // PRBS();
     }
+
+    if (distancia_entera - last_size >= square_size && iteration <= 3)
+    {
+      on_Wait = true;
+      speed = 0;
+      setSpeed(speed);
+      current_angle_algorithm += 90;
+      bno.setTargetYaw(current_angle_algorithm);
+      last_size = distancia_entera;
+      stop_pls = now;
+      iteration++;
+    }
+
+    if (on_Wait && !(std::abs(current_angle_algorithm - bno.getYaw()) <= 10))
+    {
+      stop_pls = now;
+      last_size = distancia_entera;
+    }
+
+    if (on_Wait && now - stop_pls >= 10000)
+    {
+      if (iteration <= 3)
+      {
+        speed = 15;
+      }
+      else
+      {
+        speed = 0;
+      }
+
+      on_Wait = false;
+      setSpeed(speed);
+      last_size = distancia_entera;
+    }
+
+    // Maquina de Estados //
+    //    if (now - init_time > 2000){
+    ////      setSpeed(speed);
+    //    	frontLeftMotor.set_pwm_forward(255);
+    //    	frontRightMotor.set_pwm_forward(255);
+    //    	backLeftMotor.set_pwm_forward(255);
+    //    	backRightMotor.set_pwm_forward(255);
+    //      current_speed = speed;
+    //    }
+
+    // Stop after a set condition //
+    // while (now - init_time > 20000) // CM por alcanzar
+    // {
+    //   // float yaw = bno.getYaw();
+    //   // sendYaw(yaw);
+    //   stop();
+    //   // HAL_Delay(Constants::kTimeDelay);
+    // }
+
+    HAL_Delay(Constants::kTimeDelay);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -479,7 +581,24 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void PRBS()
+{
+  // Tap en b9 y b5 → XOR para retroalimentación
+  bool feedback = b11 ^ b9;
 
+  // Shift (de derecha a izquierda: b11 ← b10 ← ... ← b1)
+  b11 = b10;
+  b10 = b9;
+  b9 = b8;
+  b8 = b7;
+  b7 = b6;
+  b6 = b5;
+  b5 = b4;
+  b4 = b3;
+  b3 = b2;
+  b2 = b1;
+  b1 = feedback; // nuevo bit entra por la izquierda
+}
 /* USER CODE END 4 */
 
 /**

@@ -1,4 +1,5 @@
 #include "BNOController.h"
+#include <cmath>
 
 void BNOController::init()
 {
@@ -13,7 +14,10 @@ void BNOController::init()
 
     BNO055_Init(config);
 
-    yawPID.set(Constants::kBNOKP, Constants::kBNOKI, Constants::kBNOKD, Constants::kBNOMinAngular, Constants::KBNOMaxAngular);
+    yawPID.set(Constants::kBNOKP, Constants::kBNOKI, Constants::kBNOKD, Constants::kBNOMinAngular, Constants::KBNOMaxAngular, Constants::kBNON);
+    HAL_Delay(100);
+    ReadData(&data, SENSOR_EULER);
+    targetYaw = data.Euler.X;
 }
 
 float BNOController::getYaw()
@@ -62,33 +66,55 @@ void BNOController::updateYawControl(uint32_t now)
         return;
 
     float current_yaw = getYaw();
-
-    // Calculamos el error angular mínimo (con wrap-around)
-    float error = targetYaw - current_yaw;
+    error = targetYaw - current_yaw;
+    error = fmod(error, 360.0f);
     if (error > 180.0f)
     {
         error -= 360.0f;
     }
-
-    if (error < -180.0f)
+    else if (error <= -180.0f)
     {
         error += 360.0f;
     }
 
+    // Calculamos el error angular mínimo (con wrap-around)
+    // float error = targetYaw - current_yaw;
+    // if (error > 180.0f)
+    // {
+    //     error -= 360.0f;
+    // }
+
+    // if (error < -180.0f)
+    // {
+    //     error += 360.0f;
+    // }
+
     // PID devuelve velocidad angular en °/s
-    float output_deg_per_sec = yawPID.calculate(0.0f, -error, dt); // Medimos cómo alejados estamos de 0
+    float output_deg_per_sec;
+    output_deg_per_sec = yawPID.calculate(0, error, dt);
 
     // Limitamos el valor de salida
-    output_deg_per_sec = std::min(std::max(output_deg_per_sec, Constants::kBNOMinAngular), Constants::KBNOMaxAngular);
+    // output_deg_per_sec = std::min(std::max(output_deg_per_sec, Constants::kBNOMinAngular), Constants::KBNOMaxAngular);
     if (fabs(error) < Constants::kAngleTolerance)
     {
         output_deg_per_sec = 0;
     }
-    lastTime = now;
     speed = output_deg_per_sec;
+    lastTime = now;
 }
 
 float BNOController::getSpeed()
 {
     return speed;
+}
+
+float BNOController::getYawRad()
+{
+    ReadData(&data, SENSOR_EULER);
+    return data.Euler.X * M_PI / 180.0f; // X es Heading (Yaw) según datasheet
+}
+
+float BNOController::getError()
+{
+    return error;
 }
